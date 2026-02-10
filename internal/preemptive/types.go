@@ -1,0 +1,199 @@
+// Package preemptive provides preemptive summarization for context window management.
+//
+// DESIGN: Eliminate context window wait times by summarizing conversation history
+// before it's needed. When context reaches a threshold (e.g., 80%), a background
+// worker generates a summary. When compaction is requested, the summary is ready.
+//
+// ARCHITECTURE:
+//   - Manager: Main entry point, orchestrates all components
+//   - SessionManager: Tracks conversation sessions by hash
+//   - Summarizer: Generates summaries via LLM API
+//   - Detector: Identifies compaction requests from various agents
+package preemptive
+
+import (
+	"encoding/json"
+	"fmt"
+	"time"
+
+	"github.com/compresr/context-gateway/internal/adapters"
+)
+
+// =============================================================================
+// CONFIGURATION
+// =============================================================================
+
+// Config contains all configuration for preemptive summarization.
+type Config struct {
+	Enabled          bool    `yaml:"enabled"`
+	TriggerThreshold float64 `yaml:"trigger_threshold"` // Start at this % (default: 80)
+
+	// Timeouts
+	PendingJobTimeout time.Duration `yaml:"pending_job_timeout,omitempty"` // Wait for pending job (default: 90s)
+	SyncTimeout       time.Duration `yaml:"sync_timeout,omitempty"`        // Sync summarization timeout (default: 2m)
+
+	// Token estimation
+	TokenEstimateRatio int `yaml:"token_estimate_ratio,omitempty"` // Bytes per token (default: 4)
+
+	// Testing override for context window size
+	TestContextWindowOverride int `yaml:"test_context_window_override,omitempty"`
+
+	// Logging
+	LogDir            string `yaml:"log_dir,omitempty"`
+	CompactionLogPath string `yaml:"compaction_log_path,omitempty"`
+
+	// Sub-configs
+	Summarizer SummarizerConfig `yaml:"summarizer"`
+	Session    SessionConfig    `yaml:"session"`
+	Detectors  DetectorsConfig  `yaml:"detectors"`
+
+	// Response headers
+	AddResponseHeaders bool `yaml:"add_response_headers"`
+}
+
+// SummarizerConfig configures the summarization service.
+type SummarizerConfig struct {
+	Model              string        `yaml:"model"`
+	APIKey             string        `yaml:"api_key"`
+	Endpoint           string        `yaml:"endpoint"`
+	MaxTokens          int           `yaml:"max_tokens"`
+	Timeout            time.Duration `yaml:"timeout"`
+	KeepRecentTokens   int           `yaml:"keep_recent_tokens"`   // Fixed token count (override)
+	KeepRecentCount    int           `yaml:"keep_recent"`          // Message-based (legacy fallback)
+	TokenEstimateRatio int           `yaml:"token_estimate_ratio"` // Bytes per token for estimation
+	SystemPrompt       string        `yaml:"system_prompt,omitempty"`
+}
+
+// SessionConfig configures session management.
+type SessionConfig struct {
+	SummaryTTL       time.Duration `yaml:"summary_ttl"`
+	HashMessageCount int           `yaml:"hash_message_count"`
+}
+
+// DetectorsConfig contains agent-specific compaction detectors.
+type DetectorsConfig struct {
+	ClaudeCode ClaudeCodeDetectorConfig `yaml:"claude_code"`
+	Codex      CodexDetectorConfig      `yaml:"codex"`
+	Generic    GenericDetectorConfig    `yaml:"generic"`
+}
+
+// ClaudeCodeDetectorConfig for Claude Code detection.
+type ClaudeCodeDetectorConfig struct {
+	Enabled        bool     `yaml:"enabled"`
+	PromptPatterns []string `yaml:"prompt_patterns"`
+}
+
+// CodexDetectorConfig for Codex detection.
+type CodexDetectorConfig struct {
+	Enabled        bool     `yaml:"enabled"`
+	PromptPatterns []string `yaml:"prompt_patterns"`
+}
+
+// GenericDetectorConfig for generic detection.
+type GenericDetectorConfig struct {
+	Enabled        bool     `yaml:"enabled"`
+	PromptPatterns []string `yaml:"prompt_patterns"`
+	HeaderName     string   `yaml:"header_name"`
+	HeaderValue    string   `yaml:"header_value"`
+}
+
+// Validate validates the configuration.
+func (c *Config) Validate() error {
+	if !c.Enabled {
+		return nil
+	}
+	if c.TriggerThreshold <= 0 || c.TriggerThreshold > 100 {
+		return fmt.Errorf("trigger_threshold must be between 0 and 100")
+	}
+	if c.Summarizer.Model == "" {
+		return fmt.Errorf("summarizer.model is required")
+	}
+	if c.Summarizer.APIKey == "" {
+		return fmt.Errorf("summarizer.api_key is required: ANTHROPIC_API_KEY is not set. Please export it or add it to ~/.config/context-gateway/.env")
+	}
+	if c.Summarizer.MaxTokens <= 0 {
+		return fmt.Errorf("summarizer.max_tokens must be positive")
+	}
+	if c.Summarizer.Timeout <= 0 {
+		return fmt.Errorf("summarizer.timeout must be positive")
+	}
+	if c.Session.SummaryTTL <= 0 {
+		return fmt.Errorf("session.summary_ttl must be positive")
+	}
+	if c.Session.HashMessageCount <= 0 {
+		return fmt.Errorf("session.hash_message_count must be positive")
+	}
+	return nil
+}
+
+// =============================================================================
+// SESSION STATES
+// =============================================================================
+
+// SessionState represents the current state of a session.
+type SessionState string
+
+const (
+	StateIdle    SessionState = "idle"    // No summarization in progress
+	StatePending SessionState = "pending" // Summarization triggered
+	StateReady   SessionState = "ready"   // Summary is ready
+	StateUsed    SessionState = "used"    // Summary has been used
+)
+
+// SummaryGracePeriod is how long a summary remains available after first use.
+const SummaryGracePeriod = 500 * time.Millisecond
+
+// =============================================================================
+// DETECTION RESULT
+// =============================================================================
+
+// DetectionResult contains the result of compaction detection.
+type DetectionResult struct {
+	IsCompactionRequest bool
+	DetectedBy          string
+	Confidence          float64
+	Details             map[string]interface{}
+}
+
+// =============================================================================
+// MODEL CONTEXT WINDOW
+// =============================================================================
+
+// ModelContextWindow defines context window for a model.
+type ModelContextWindow struct {
+	Model        string
+	MaxTokens    int
+	OutputMax    int
+	EffectiveMax int
+}
+
+// =============================================================================
+// TOKEN USAGE
+// =============================================================================
+
+// TokenUsage represents current token usage.
+type TokenUsage struct {
+	InputTokens  int
+	MaxTokens    int
+	UsagePercent float64
+}
+
+// =============================================================================
+// INTERNAL REQUEST TYPES
+// =============================================================================
+
+// request represents a parsed incoming request.
+type request struct {
+	messages  []json.RawMessage
+	model     string
+	sessionID string
+	provider  adapters.Provider
+	detection DetectionResult
+}
+
+// summaryResult contains the result of a summarization.
+type summaryResult struct {
+	summary   string
+	tokens    int
+	lastIndex int
+}

@@ -1,0 +1,61 @@
+// Package monitoring - metrics.go provides simple counters.
+//
+// DESIGN: Lightweight in-memory counters for operational metrics:
+//   - requests/successes: Total and successful request counts
+//   - compressions:       Number of compression operations
+//   - cache_hits/misses:  Shadow context cache performance
+//
+// For production, export these to Prometheus or similar.
+package monitoring
+
+import (
+	"sync/atomic"
+	"time"
+)
+
+// MetricsCollector collects operational metrics.
+type MetricsCollector struct {
+	requests     atomic.Int64
+	successes    atomic.Int64
+	compressions atomic.Int64
+	cacheHits    atomic.Int64
+	cacheMisses  atomic.Int64
+}
+
+// NewMetricsCollector creates a new metrics collector.
+func NewMetricsCollector() *MetricsCollector {
+	return &MetricsCollector{}
+}
+
+// RecordRequest records a request.
+func (mc *MetricsCollector) RecordRequest(success bool, _ time.Duration) {
+	mc.requests.Add(1)
+	if success {
+		mc.successes.Add(1)
+	}
+}
+
+// RecordCompression records a compression operation.
+func (mc *MetricsCollector) RecordCompression(_, _ int, _ bool) {
+	mc.compressions.Add(1)
+}
+
+// RecordCacheHit records a cache hit.
+func (mc *MetricsCollector) RecordCacheHit() { mc.cacheHits.Add(1) }
+
+// RecordCacheMiss records a cache miss.
+func (mc *MetricsCollector) RecordCacheMiss() { mc.cacheMisses.Add(1) }
+
+// Stats returns current metrics.
+func (mc *MetricsCollector) Stats() map[string]int64 {
+	return map[string]int64{
+		"requests":     mc.requests.Load(),
+		"successes":    mc.successes.Load(),
+		"compressions": mc.compressions.Load(),
+		"cache_hits":   mc.cacheHits.Load(),
+		"cache_misses": mc.cacheMisses.Load(),
+	}
+}
+
+// Stop is a no-op for compatibility.
+func (mc *MetricsCollector) Stop() {}
