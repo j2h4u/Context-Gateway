@@ -22,6 +22,7 @@ import (
 
 	"github.com/compresr/context-gateway/internal/config"
 	"github.com/compresr/context-gateway/internal/store"
+	"github.com/rs/zerolog/log"
 )
 
 // V2 Configuration constants
@@ -167,17 +168,36 @@ func minFloat(a, b float64) float64 {
 // New creates a new tool output compression pipe.
 // V2: Initializes rate limiting, metrics, and dual-TTL caching.
 func New(cfg *config.Config, st store.Store) *Pipe {
-	// Build full API URL from base URL + endpoint path
-	// For external_provider strategy, endpoint is already the full URL
-	var apiEndpoint string
-	if cfg.Pipes.ToolOutput.Strategy == config.StrategyExternalProvider {
-		apiEndpoint = cfg.Pipes.ToolOutput.API.Endpoint // Full URL for external providers
-	} else {
-		apiEndpoint = cfg.URLs.Compresr + cfg.Pipes.ToolOutput.API.Endpoint
-		// Clean up double slashes (except in http://)
-		apiEndpoint = strings.Replace(apiEndpoint, "://", "::SCHEME::", 1)
-		apiEndpoint = strings.ReplaceAll(apiEndpoint, "//", "/")
-		apiEndpoint = strings.Replace(apiEndpoint, "::SCHEME::", "://", 1)
+	// Resolve provider settings (endpoint, api_key, model) from providers section
+	var apiEndpoint, apiKey, apiModel string
+	if cfg.Pipes.ToolOutput.Provider != "" {
+		if resolved, err := cfg.ResolveProvider(cfg.Pipes.ToolOutput.Provider); err == nil {
+			apiEndpoint = resolved.Endpoint
+			apiKey = resolved.APIKey
+			apiModel = resolved.Model
+		} else {
+			log.Warn().Err(err).Str("provider", cfg.Pipes.ToolOutput.Provider).
+				Msg("tool_output: failed to resolve provider, falling back to inline API config")
+		}
+	}
+
+	// Inline API config overrides provider settings
+	if cfg.Pipes.ToolOutput.API.Endpoint != "" {
+		if cfg.Pipes.ToolOutput.Strategy == config.StrategyExternalProvider {
+			apiEndpoint = cfg.Pipes.ToolOutput.API.Endpoint
+		} else {
+			apiEndpoint = cfg.URLs.Compresr + cfg.Pipes.ToolOutput.API.Endpoint
+			// Clean up double slashes (except in http://)
+			apiEndpoint = strings.Replace(apiEndpoint, "://", "::SCHEME::", 1)
+			apiEndpoint = strings.ReplaceAll(apiEndpoint, "//", "/")
+			apiEndpoint = strings.Replace(apiEndpoint, "::SCHEME::", "://", 1)
+		}
+	}
+	if cfg.Pipes.ToolOutput.API.APIKey != "" {
+		apiKey = cfg.Pipes.ToolOutput.API.APIKey
+	}
+	if cfg.Pipes.ToolOutput.API.Model != "" {
+		apiModel = cfg.Pipes.ToolOutput.API.Model
 	}
 
 	// Use config fields with sensible defaults
@@ -221,7 +241,7 @@ func New(cfg *config.Config, st store.Store) *Pipe {
 		apiTimeout = 30 * time.Second
 	}
 
-	return &Pipe{
+	p := &Pipe{
 		enabled:             cfg.Pipes.ToolOutput.Enabled,
 		strategy:            cfg.Pipes.ToolOutput.Strategy,
 		fallbackStrategy:    fallbackStrategy,
@@ -234,8 +254,8 @@ func New(cfg *config.Config, st store.Store) *Pipe {
 
 		// API strategy config (used by both api and external_provider strategies)
 		apiEndpoint:      apiEndpoint,
-		apiKey:           cfg.Pipes.ToolOutput.API.APIKey,
-		apiModel:         cfg.Pipes.ToolOutput.API.Model,
+		apiKey:           apiKey,
+		apiModel:         apiModel,
 		apiTimeout:       apiTimeout,
 		apiQueryAgnostic: cfg.Pipes.ToolOutput.API.QueryAgnostic,
 
@@ -249,6 +269,13 @@ func New(cfg *config.Config, st store.Store) *Pipe {
 		// V2: Idempotent tools
 		idempotentTools: idempotentTools,
 	}
+
+	// Log warning if no API key configured (will rely on captured Bearer token from requests)
+	if p.apiKey == "" && cfg.Pipes.ToolOutput.Strategy == config.StrategyExternalProvider {
+		log.Info().Msg("tool_output: no API key configured, will use captured Bearer token from incoming requests")
+	}
+
+	return p
 }
 
 // Name returns the pipe name.
