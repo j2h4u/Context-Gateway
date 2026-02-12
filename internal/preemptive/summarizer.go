@@ -5,6 +5,8 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"net/http"
+	"os"
 	"sync"
 	"time"
 
@@ -255,7 +257,7 @@ func (s *Summarizer) findCutoffByTokens(messages []json.RawMessage, keepTokens i
 }
 
 func (s *Summarizer) callAPI(ctx context.Context, systemPrompt, userContent string) (*external.CallLLMResult, error) {
-	log.Debug().Str("model", s.config.Model).Int("max_tokens", s.config.MaxTokens).Msg("Calling summarization API")
+	log.Debug().Str("model", s.config.Model).Str("provider", s.config.Provider).Int("max_tokens", s.config.MaxTokens).Msg("Calling summarization API")
 
 	endpoint := s.getEndpoint()
 	authToken, _ := s.getAuthToken()
@@ -266,7 +268,8 @@ func (s *Summarizer) callAPI(ctx context.Context, systemPrompt, userContent stri
 		apiKey = authToken
 	}
 
-	return external.CallLLM(ctx, external.CallLLMParams{
+	params := external.CallLLMParams{
+		Provider:     s.config.Provider,
 		Endpoint:     endpoint,
 		APIKey:       apiKey,
 		Model:        s.config.Model,
@@ -274,5 +277,33 @@ func (s *Summarizer) callAPI(ctx context.Context, systemPrompt, userContent stri
 		UserPrompt:   userContent,
 		MaxTokens:    s.config.MaxTokens,
 		Timeout:      s.config.Timeout,
-	})
+	}
+
+	// For Bedrock, use a signing HTTP client
+	if s.config.Provider == "bedrock" {
+		client, err := s.getBedrockHTTPClient()
+		if err != nil {
+			return nil, fmt.Errorf("failed to create Bedrock HTTP client: %w", err)
+		}
+		params.HTTPClient = client
+	}
+
+	return external.CallLLM(ctx, params)
+}
+
+// getBedrockHTTPClient returns an HTTP client with SigV4 signing for Bedrock.
+func (s *Summarizer) getBedrockHTTPClient() (*http.Client, error) {
+	region := os.Getenv("AWS_REGION")
+	if region == "" {
+		region = os.Getenv("AWS_DEFAULT_REGION")
+	}
+	if region == "" {
+		region = "us-east-1"
+	}
+
+	transport, err := external.NewBedrockSigningTransport(region, nil)
+	if err != nil {
+		return nil, err
+	}
+	return &http.Client{Transport: transport}, nil
 }

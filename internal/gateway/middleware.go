@@ -269,5 +269,7 @@ func (g *Gateway) isAllowedHost(host string) bool {
 		host = h
 	}
 	host = strings.ToLower(host)
+
+	// Check static allowlist only (no dynamic patterns for security)
 	return allowedHosts[host]
 }

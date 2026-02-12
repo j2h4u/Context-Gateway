@@ -47,6 +47,8 @@ func detectProvider(path string, headers http.Header) Provider {
 			return ProviderOpenAI
 		case "gemini":
 			return ProviderGemini
+		case "bedrock":
+			return ProviderBedrock
 		case "ollama":
 			return ProviderOllama
 		}
@@ -90,6 +92,16 @@ func detectProvider(path string, headers http.Header) Provider {
 	if strings.HasSuffix(path, "/api/chat") ||
 		strings.HasSuffix(path, "/api/generate") {
 		return ProviderOllama
+	}
+
+	// 8. Bedrock: URL path patterns (after all other checks)
+	// Only matches specific Bedrock API paths - cannot be triggered by headers alone
+	if strings.Contains(path, "/model/") &&
+		(strings.HasSuffix(path, "/invoke") ||
+			strings.HasSuffix(path, "/invoke-with-response-stream") ||
+			strings.HasSuffix(path, "/converse") ||
+			strings.HasSuffix(path, "/converse-stream")) {
+		return ProviderBedrock
 	}
 
 	// Default to OpenAI format (most common)

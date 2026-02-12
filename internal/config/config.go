@@ -28,6 +28,13 @@ type Config struct {
 	Store      StoreConfig      `yaml:"store"`      // Shadow context store
 	Monitoring MonitoringConfig `yaml:"monitoring"` // Telemetry and logging
 	Preemptive PreemptiveConfig `yaml:"preemptive"` // Preemptive summarization settings
+	Bedrock    BedrockConfig    `yaml:"bedrock"`    // AWS Bedrock support (opt-in)
+}
+
+// BedrockConfig controls AWS Bedrock provider support.
+// Bedrock support is disabled by default and must be explicitly enabled.
+type BedrockConfig struct {
+	Enabled bool `yaml:"enabled"` // Must be true to enable Bedrock provider detection and SigV4 signing
 }
 
 // ServerConfig contains HTTP server settings.
