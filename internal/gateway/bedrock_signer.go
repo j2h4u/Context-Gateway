@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"net/http"
 	"os"
-	"strings"
 	"time"
 
 	"github.com/aws/aws-sdk-go-v2/aws"
@@ -119,11 +118,4 @@ func (bs *BedrockSigner) SignRequest(ctx context.Context, req *http.Request, bod
 func (bs *BedrockSigner) BuildTargetURL(path string) string {
 	host := fmt.Sprintf(bedrockHostPattern, bs.region)
 	return fmt.Sprintf("https://%s%s", host, path)
-}
-
-// IsBedrockHost checks if a hostname is a Bedrock Runtime endpoint.
-func IsBedrockHost(host string) bool {
-	host = strings.ToLower(host)
-	return strings.HasPrefix(host, "bedrock-runtime.") &&
-		strings.HasSuffix(host, ".amazonaws.com")
 }

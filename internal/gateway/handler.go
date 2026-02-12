@@ -776,7 +776,11 @@ func (g *Gateway) forwardPassthrough(ctx context.Context, r *http.Request, body 
 }
 
 // isBedrockRequest checks if the request path matches Bedrock URL patterns.
+// Returns false if Bedrock support is not explicitly enabled in config.
 func (g *Gateway) isBedrockRequest(path string) bool {
+	if !g.config.Bedrock.Enabled {
+		return false
+	}
 	return strings.Contains(path, "/model/") &&
 		(strings.HasSuffix(path, "/invoke") ||
 			strings.HasSuffix(path, "/invoke-with-response-stream") ||

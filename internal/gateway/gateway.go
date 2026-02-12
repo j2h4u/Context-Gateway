@@ -89,8 +89,9 @@ func init() {
 	}
 }
 
-// init registers Bedrock Runtime hosts for common AWS regions.
-func init() {
+// registerBedrockHosts adds Bedrock Runtime hosts to the SSRF allowlist.
+// Only called when Bedrock is explicitly enabled in config.
+func registerBedrockHosts() {
 	bedrockRegions := []string{
 		"us-east-1", "us-east-2", "us-west-1", "us-west-2",
 		"eu-west-1", "eu-west-2", "eu-west-3", "eu-central-1", "eu-north-1",
@@ -201,8 +202,12 @@ func New(cfg *config.Config) *Gateway {
 		ResponseHeaderTimeout: headerTimeout, // 0 = no timeout (safe for LLM with extended thinking)
 	}
 
-	// Initialize AWS Bedrock signer (non-blocking, logs if credentials unavailable)
-	bedrockSigner := NewBedrockSigner()
+	// Initialize AWS Bedrock signer only when explicitly enabled
+	var bedrockSigner *BedrockSigner
+	if cfg.Bedrock.Enabled {
+		registerBedrockHosts()
+		bedrockSigner = NewBedrockSigner()
+	}
 
 	g := &Gateway{
 		config:        cfg,

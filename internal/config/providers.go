@@ -98,6 +98,11 @@ func (cfg *Config) ValidateUsedProviders() error {
 	usedProviders := GetUsedProviderNames(cfg)
 
 	for _, name := range usedProviders {
+		// Bedrock is a built-in provider that uses AWS SigV4 auth
+		// instead of the standard API key pattern — no providers entry needed
+		if name == "bedrock" {
+			continue
+		}
 		provider, ok := cfg.Providers[name]
 		if !ok {
 			return fmt.Errorf("provider %q is referenced but not defined in providers section", name)

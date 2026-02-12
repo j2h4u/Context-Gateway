@@ -270,15 +270,6 @@ func (g *Gateway) isAllowedHost(host string) bool {
 	}
 	host = strings.ToLower(host)
 
-	// Check static allowlist
-	if allowedHosts[host] {
-		return true
-	}
-
-	// Dynamic check for Bedrock Runtime hosts (any region)
-	if strings.HasPrefix(host, "bedrock-runtime.") && strings.HasSuffix(host, ".amazonaws.com") {
-		return true
-	}
-
-	return false
+	// Check static allowlist only (no dynamic patterns for security)
+	return allowedHosts[host]
 }

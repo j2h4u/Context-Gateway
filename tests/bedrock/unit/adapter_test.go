@@ -2,6 +2,7 @@ package unit
 
 import (
 	"encoding/json"
+	"net/http"
 	"testing"
 
 	"github.com/compresr/context-gateway/internal/adapters"
@@ -326,15 +327,24 @@ func TestBedrock_ProviderDetection_PathBased(t *testing.T) {
 	}
 }
 
-func TestBedrock_ProviderDetection_XAmzDate(t *testing.T) {
+func TestBedrock_ProviderDetection_XAmzDateDoesNotTrigger(t *testing.T) {
+	// X-Amz-Date header alone should NOT trigger Bedrock detection (security fix)
 	registry := adapters.NewRegistry()
 	headers := make(map[string][]string)
 	headers["X-Amz-Date"] = []string{"20240101T000000Z"}
 
-	provider, adapter := adapters.IdentifyAndGetAdapter(registry, "/some/path", headers)
-	assert.Equal(t, adapters.ProviderBedrock, provider)
-	assert.NotNil(t, adapter)
-	assert.Equal(t, "bedrock", adapter.Name())
+	provider, _ := adapters.IdentifyAndGetAdapter(registry, "/some/path", headers)
+	assert.NotEqual(t, adapters.ProviderBedrock, provider, "X-Amz-Date header alone should not trigger Bedrock detection")
+}
+
+func TestBedrock_ProviderDetection_PathAfterAnthropicVersion(t *testing.T) {
+	// anthropic-version header should take priority over Bedrock path patterns
+	registry := adapters.NewRegistry()
+	headers := http.Header{}
+	headers.Set("anthropic-version", "2023-06-01")
+
+	provider, _ := adapters.IdentifyAndGetAdapter(registry, "/model/anthropic.claude-3/invoke", headers)
+	assert.Equal(t, adapters.ProviderAnthropic, provider, "anthropic-version should take priority over Bedrock path")
 }
 
 func TestBedrock_ProviderDetection_XProviderHeader(t *testing.T) {

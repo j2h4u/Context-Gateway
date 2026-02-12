@@ -61,6 +61,15 @@ providers:
   #   model: "gemini-3-flash"
 
 # =============================================================================
+# AWS BEDROCK (opt-in, disabled by default)
+# =============================================================================
+# Enable to support AWS Bedrock as a provider with SigV4 signing.
+# Requires AWS credentials (env vars, AWS_PROFILE, or IAM role).
+#
+# bedrock:
+#   enabled: true
+
+# =============================================================================
 # PREEMPTIVE SUMMARIZATION
 # =============================================================================
 

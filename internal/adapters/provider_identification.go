@@ -54,21 +54,6 @@ func detectProvider(path string, headers http.Header) Provider {
 		}
 	}
 
-	// 1b. Bedrock: URL path patterns (/model/xxx/invoke or /model/xxx/converse)
-	// Must check before anthropic-version since Bedrock requests may also set that header
-	if strings.Contains(path, "/model/") &&
-		(strings.HasSuffix(path, "/invoke") ||
-			strings.HasSuffix(path, "/invoke-with-response-stream") ||
-			strings.HasSuffix(path, "/converse") ||
-			strings.HasSuffix(path, "/converse-stream")) {
-		return ProviderBedrock
-	}
-
-	// 1c. Bedrock: X-Amz-Date header (SigV4 indicator from AWS SDK)
-	if headers.Get("X-Amz-Date") != "" {
-		return ProviderBedrock
-	}
-
 	// 2. anthropic-version header is definitive for Anthropic
 	// Claude CLI/SDK always sends this header
 	if headers.Get("anthropic-version") != "" {
@@ -107,6 +92,16 @@ func detectProvider(path string, headers http.Header) Provider {
 	if strings.HasSuffix(path, "/api/chat") ||
 		strings.HasSuffix(path, "/api/generate") {
 		return ProviderOllama
+	}
+
+	// 8. Bedrock: URL path patterns (after all other checks)
+	// Only matches specific Bedrock API paths - cannot be triggered by headers alone
+	if strings.Contains(path, "/model/") &&
+		(strings.HasSuffix(path, "/invoke") ||
+			strings.HasSuffix(path, "/invoke-with-response-stream") ||
+			strings.HasSuffix(path, "/converse") ||
+			strings.HasSuffix(path, "/converse-stream")) {
+		return ProviderBedrock
 	}
 
 	// Default to OpenAI format (most common)
