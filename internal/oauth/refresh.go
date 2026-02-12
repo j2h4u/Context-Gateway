@@ -11,6 +11,7 @@ import (
 
 const (
 	// tokenRefreshEndpoint is the Anthropic OAuth token refresh URL.
+	// #nosec G101 -- This is a public API endpoint, not a credential
 	tokenRefreshEndpoint = "https://console.anthropic.com/api/oauth/token"
 
 	// clientID is the Claude Code OAuth client ID.

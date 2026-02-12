@@ -53,6 +53,11 @@ type Config struct {
 
 // SummarizerConfig configures the summarization service.
 type SummarizerConfig struct {
+	// Provider reference (preferred over inline settings)
+	// References a provider defined in the top-level "providers" section.
+	Provider string `yaml:"provider,omitempty"`
+
+	// Inline settings (used if Provider is not set, or for overrides)
 	Model              string        `yaml:"model"`
 	APIKey             string        `yaml:"api_key"`
 	Endpoint           string        `yaml:"endpoint"`
@@ -105,12 +110,12 @@ func (c *Config) Validate() error {
 	if c.TriggerThreshold <= 0 || c.TriggerThreshold > 100 {
 		return fmt.Errorf("trigger_threshold must be between 0 and 100")
 	}
-	if c.Summarizer.Model == "" {
-		return fmt.Errorf("summarizer.model is required")
+	// Model is required unless using provider reference
+	if c.Summarizer.Provider == "" && c.Summarizer.Model == "" {
+		return fmt.Errorf("summarizer.model is required (or use provider reference)")
 	}
-	if c.Summarizer.APIKey == "" {
-		return fmt.Errorf("summarizer.api_key is required: ANTHROPIC_API_KEY is not set. Please export it or add it to ~/.config/context-gateway/.env")
-	}
+	// API key is optional - can be captured from incoming requests (Max/Pro users)
+	// Runtime error will occur in callAPI if no auth is available
 	if c.Summarizer.MaxTokens <= 0 {
 		return fmt.Errorf("summarizer.max_tokens must be positive")
 	}

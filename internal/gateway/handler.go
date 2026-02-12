@@ -202,6 +202,30 @@ func (g *Gateway) handleProxy(w http.ResponseWriter, r *http.Request) {
 	var isCompaction bool
 	var syntheticResponse []byte
 	if g.preemptive != nil {
+		// Capture auth token for summarizer (allows Max/Pro users without explicit API key)
+		if auth := r.Header.Get("x-api-key"); auth != "" {
+			log.Debug().Str("auth_type", "x-api-key").Str("auth", maskKey(auth)).Msg("Captured auth for summarizer")
+			g.preemptive.SetAuthToken(auth, true) // from x-api-key header
+		} else if auth := r.Header.Get("Authorization"); auth != "" {
+			log.Debug().Str("auth_type", "Authorization").Str("auth", maskKey(auth)).Msg("Captured auth for summarizer")
+			g.preemptive.SetAuthToken(strings.TrimPrefix(auth, "Bearer "), false) // from Authorization header
+		}
+		// Capture upstream endpoint URL for summarizer (same logic as forwardPassthrough)
+		// Priority: X-Target-URL header > autoDetect
+		xTargetURL := r.Header.Get(HeaderTargetURL)
+		targetURL := xTargetURL
+		if targetURL == "" {
+			targetURL = g.autoDetectTargetURL(r)
+		}
+		if targetURL != "" {
+			log.Info().
+				Str("X-Target-URL_header", xTargetURL).
+				Str("auto_detected", g.autoDetectTargetURL(r)).
+				Str("final_endpoint", targetURL).
+				Msg("Captured endpoint for summarizer")
+			g.preemptive.SetEndpoint(targetURL)
+		}
+
 		var preemptiveBody []byte
 		preemptiveBody, isCompaction, syntheticResponse, preemptiveHeaders, _ = g.preemptive.ProcessRequest(r.Header, body, model, adapter.Name())
 
@@ -585,6 +609,7 @@ func (g *Gateway) streamResponse(w http.ResponseWriter, reader io.Reader) {
 	}
 
 	buf := make([]byte, 4096)
+
 	for {
 		n, err := reader.Read(buf)
 		if n > 0 {
@@ -629,17 +654,6 @@ func (g *Gateway) processCompressionPipeline(body []byte, pipeCtx *PipelineConte
 			} else {
 				forwardBody = modifiedBody
 				compressionUsed = pipeCtx.OutputCompressed
-			}
-		}
-	case PipeHistory:
-		pipeStrategy = g.config.Pipes.History.Strategy
-		if pipeStrategy != config.StrategyPassthrough {
-			if modifiedBody, err := g.router.ProcessHistory(pipeCtx); err != nil {
-				log.Warn().Err(err).Msg("history pipe failed")
-				g.alerts.FlagCompressionFailure(requestID, string(pipeType), pipeStrategy, err)
-			} else {
-				forwardBody = modifiedBody
-				compressionUsed = pipeCtx.HistoryCompressed
 			}
 		}
 	case PipeToolDiscovery:
@@ -698,6 +712,7 @@ func (g *Gateway) forwardPassthrough(ctx context.Context, r *http.Request, body 
 	log.Info().
 		Str("targetURL", targetURL).
 		Str("x-api-key", maskKey(r.Header.Get("x-api-key"))).
+		Str("authorization", maskKey(r.Header.Get("Authorization"))).
 		Msg("forwarding request")
 
 	parsedURL, err := url.Parse(targetURL)

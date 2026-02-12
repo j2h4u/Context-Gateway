@@ -24,8 +24,6 @@ import (
 	"net/http"
 	"strings"
 	"time"
-
-	"github.com/compresr/context-gateway/internal/oauth"
 )
 
 const (
@@ -62,17 +60,9 @@ type CallLLMParams struct {
 }
 
 // validate checks that required fields are present and sets defaults.
-// If APIKey is empty, attempts to get one from the OAuth token manager.
 func (p *CallLLMParams) validate() error {
 	if p.Endpoint == "" {
 		return fmt.Errorf("endpoint required")
-	}
-	if p.APIKey == "" {
-		// Try to get API key from OAuth token manager
-		manager := oauth.Global()
-		if manager.HasCredentials() {
-			p.APIKey = manager.GetAccessToken()
-		}
 	}
 	if p.APIKey == "" {
 		return fmt.Errorf("api key required")

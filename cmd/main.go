@@ -17,7 +17,6 @@ import (
 
 	"github.com/compresr/context-gateway/internal/config"
 	"github.com/compresr/context-gateway/internal/gateway"
-	"github.com/compresr/context-gateway/internal/oauth"
 )
 
 // ANSI color codes
@@ -59,82 +58,14 @@ func loadEnvFiles() {
 	_ = godotenv.Load()
 }
 
-// ensureAPIKey checks for ANTHROPIC_API_KEY and falls back to OAuth credentials if not set.
-// Returns true if an API key is available (either from env or OAuth), false otherwise.
-// If OAuth credentials are used, exports ANTHROPIC_API_KEY to the environment for child processes.
-func ensureAPIKey() bool {
-	// Check if API key is already set
-	if os.Getenv("ANTHROPIC_API_KEY") != "" {
-		return true
-	}
-
-	// Try to load OAuth credentials from Claude Code
-	manager := oauth.Global()
-	if err := manager.Initialize(); err != nil {
-		// Initialization failed - credentials exist but couldn't be loaded/refreshed
-		fmt.Fprintf(os.Stderr, "\n  \033[1;33mWarning:\033[0m Failed to load Claude Code OAuth credentials: %v\n\n", err)
-		return false
-	}
-
-	if !manager.HasCredentials() {
-		// No OAuth credentials available
-		return false
-	}
-
-	// Use OAuth access token as the API key
-	accessToken := manager.GetAccessToken()
-	os.Setenv("ANTHROPIC_API_KEY", accessToken)
-
-	// Start background refresh to keep the token fresh
-	ctx := context.Background()
-	manager.StartBackgroundRefresh(ctx)
-
-	fmt.Printf("  \033[0;32m[OK]\033[0m Using Claude Code OAuth credentials\n")
-
-	// Show expiry info
-	creds := manager.GetCredentials()
-	if creds != nil {
-		remaining := creds.TimeUntilExpiry()
-		if remaining > 0 {
-			fmt.Printf("  \033[0;34m[INFO]\033[0m Token expires in %s\n", formatDuration(remaining))
-		}
-	}
-
-	return true
-}
-
-// formatDuration formats a duration in a human-readable way.
-func formatDuration(d time.Duration) string {
-	if d < time.Minute {
-		return fmt.Sprintf("%d seconds", int(d.Seconds()))
-	}
-	if d < time.Hour {
-		return fmt.Sprintf("%d minutes", int(d.Minutes()))
-	}
-	hours := int(d.Hours())
-	minutes := int(d.Minutes()) % 60
-	if minutes == 0 {
-		return fmt.Sprintf("%d hours", hours)
-	}
-	return fmt.Sprintf("%d hours %d minutes", hours, minutes)
-}
-
-// printAPIKeyError prints the error message when no API key is available.
-func printAPIKeyError() {
-	fmt.Fprintf(os.Stderr, "\n  \033[1;31mError:\033[0m ANTHROPIC_API_KEY is not set.\n\n")
-	fmt.Fprintf(os.Stderr, "  You must provide an Anthropic API key or use Claude Code OAuth.\n\n")
-	fmt.Fprintf(os.Stderr, "  Option 1: Export API key directly\n")
-	fmt.Fprintf(os.Stderr, "    export ANTHROPIC_API_KEY=sk-ant-...\n\n")
-	fmt.Fprintf(os.Stderr, "  Option 2: Add API key to your .env file\n")
-	fmt.Fprintf(os.Stderr, "    echo 'ANTHROPIC_API_KEY=sk-ant-...' >> ~/.config/context-gateway/.env\n\n")
-	fmt.Fprintf(os.Stderr, "  Option 3: Login to Claude Code (uses OAuth)\n")
-	fmt.Fprintf(os.Stderr, "    claude login\n\n")
-}
-
 func main() {
 	// Handle subcommands first (before flags)
 	if len(os.Args) > 1 {
 		switch os.Args[1] {
+		case "agent":
+			// Launch agent with interactive selection
+			runAgentCommand(os.Args[2:])
+			return
 		case "serve", "start":
 			// Start the gateway server only (no agent)
 			runGatewayServer(os.Args[2:])
@@ -225,12 +156,6 @@ func runGatewayServer(args []string) {
 		printBanner()
 	}
 
-	// Ensure API key is available (from env or OAuth)
-	if !ensureAPIKey() {
-		printAPIKeyError()
-		os.Exit(1)
-	}
-
 	// Check for updates (non-blocking notification)
 	CheckForUpdates()
 
@@ -256,7 +181,6 @@ func runGatewayServer(args []string) {
 
 	log.Info().
 		Int("port", cfg.Server.Port).
-		Bool("history_pipe", cfg.Pipes.History.Enabled).
 		Bool("tool_output_pipe", cfg.Pipes.ToolOutput.Enabled).
 		Bool("tool_discovery_pipe", cfg.Pipes.ToolDiscovery.Enabled).
 		Msg("configuration loaded")

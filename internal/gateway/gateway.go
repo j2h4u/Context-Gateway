@@ -65,12 +65,12 @@ var allowedHosts = map[string]bool{
 	"api.x.ai":              true,
 
 	// Cloud providers
-	"bedrock-runtime.amazonaws.com":       true,
-	"aiplatform.googleapis.com":           true,
-	"cognitiveservices.azure.com":         true,
-	"openai.azure.com":                    true,
-	"api-inference.huggingface.co":        true,
-	"ai-gateway.cloudflare.com":           true,
+	"bedrock-runtime.amazonaws.com": true,
+	"aiplatform.googleapis.com":     true,
+	"cognitiveservices.azure.com":   true,
+	"openai.azure.com":              true,
+	"api-inference.huggingface.co":  true,
+	"ai-gateway.cloudflare.com":     true,
 
 	// Local/self-hosted
 	"localhost": true,
@@ -195,7 +195,7 @@ func New(cfg *config.Config) *Gateway {
 		expander:      tooloutput.NewExpander(st, tracker),
 		httpClient:    &http.Client{Timeout: clientTimeout, Transport: transport}, // 0 = no timeout
 		rateLimiter:   newRateLimiter(DefaultRateLimit),
-		preemptive:    preemptive.NewManager(cfg.Preemptive),
+		preemptive:    preemptive.NewManager(cfg.ResolvePreemptiveProvider()),
 		logger:        logger,
 		requestLogger: requestLogger,
 		metrics:       metrics,

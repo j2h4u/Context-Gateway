@@ -1,8 +1,8 @@
 // Request utilities - URL detection and request patching.
 //
 // DESIGN:
-//   - autoDetectTargetURL():       Infer upstream URL from headers/path
-//   - isNonLLMEndpoint():          Skip compression for non-LLM paths
+//   - autoDetectTargetURL(): Infer upstream URL from headers/path
+//   - isNonLLMEndpoint():   Skip compression for non-LLM paths
 //
 // NOTE: Provider detection is centralized in adapters.IdentifyAndGetAdapter()
 package gateway

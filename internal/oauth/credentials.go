@@ -16,11 +16,11 @@ import (
 
 // ClaudeCredentials represents the OAuth credentials from Claude Code.
 type ClaudeCredentials struct {
-	AccessToken      string `json:"accessToken"`
-	RefreshToken     string `json:"refreshToken"`
-	ExpiresAt        int64  `json:"expiresAt"` // Unix timestamp in milliseconds
+	AccessToken      string   `json:"accessToken"`
+	RefreshToken     string   `json:"refreshToken"`
+	ExpiresAt        int64    `json:"expiresAt"` // Unix timestamp in milliseconds
 	Scopes           []string `json:"scopes"`
-	SubscriptionType string `json:"subscriptionType"`
+	SubscriptionType string   `json:"subscriptionType"`
 }
 
 // credentialsFile represents the structure of ~/.claude/.credentials.json.
