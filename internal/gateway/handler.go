@@ -739,7 +739,7 @@ func (g *Gateway) forwardPassthrough(ctx context.Context, r *http.Request, body 
 		// Bedrock: use AWS SigV4 signing instead of forwarding API key headers
 		httpReq.Header.Set("Content-Type", "application/json")
 
-		if err := g.bedrockSigner.SignRequest(ctx, httpReq, body); err != nil {
+		if err = g.bedrockSigner.SignRequest(ctx, httpReq, body); err != nil {
 			return nil, fmt.Errorf("failed to sign Bedrock request: %w", err)
 		}
 	} else {

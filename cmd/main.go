@@ -156,8 +156,6 @@ func runGatewayServer(args []string) {
 		printBanner()
 	}
 
-
-
 	// Check for updates (non-blocking notification)
 	CheckForUpdates()
 
