@@ -30,11 +30,14 @@ urls:
 #   - gemini:    generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
 #   - openai:    api.openai.com/v1/chat/completions
 #
-# Example with multiple providers:
+# Example with multiple providers and auth methods:
 #   providers:
 #     anthropic:
 #       api_key: "${ANTHROPIC_API_KEY}"
 #       model: "claude-haiku-4-5"
+#     anthropic_oauth:
+#       auth: "oauth"  # Use captured Bearer token from Claude Code requests
+#       model: "claude-haiku-4-5-20251001"
 #     gemini:
 #       api_key: "${GEMINI_API_KEY}"
 #       model: "gemini-2.0-flash"
@@ -42,13 +45,18 @@ urls:
 #       api_key: "${OPENAI_API_KEY}"
 #       model: "gpt-4o-mini"
 #
+# Auth methods:
+#   - api_key (default): Uses api_key field for authentication
+#   - oauth: Uses captured Bearer token from incoming requests (Max/Pro subscribers)
+#   - bedrock: Uses AWS SigV4 signing (requires bedrock.enabled: true)
+#
 # Then reference in preemptive and pipes:
 #   preemptive:
 #     summarizer:
 #       provider: "gemini"   # Use Gemini for summarization
 #   pipes:
 #     tool_output:
-#       provider: "openai"   # Use OpenAI for compression
+#       provider: "anthropic_oauth"   # Use OAuth for compression
 # =============================================================================
 
 providers:

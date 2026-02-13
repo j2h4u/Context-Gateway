@@ -17,6 +17,7 @@ import (
 // ProviderConfig configures a single LLM provider.
 type ProviderConfig struct {
 	APIKey   string `yaml:"api_key"`            // API key (supports ${VAR} syntax)
+	Auth     string `yaml:"auth,omitempty"`     // Auth method: "api_key" (default), "oauth", or "bedrock" (SigV4)
 	Model    string `yaml:"model"`              // Model name (e.g., "claude-haiku-4-5", "gemini-2.0-flash")
 	Endpoint string `yaml:"endpoint,omitempty"` // Optional: override auto-resolved endpoint
 }
@@ -63,7 +64,18 @@ func (p ProvidersConfig) Validate() error {
 		if cfg.Model == "" {
 			return fmt.Errorf("provider %q: model is required", name)
 		}
-		// API key can be empty (captured from requests for Max/Pro users)
+		// Validate auth field
+		if cfg.Auth != "" && cfg.Auth != "api_key" && cfg.Auth != "oauth" && cfg.Auth != "bedrock" {
+			return fmt.Errorf("provider %q: invalid auth %q (must be api_key, oauth, or bedrock)", name, cfg.Auth)
+		}
+		// When auth is explicitly set to oauth, api_key should be empty
+		if cfg.Auth == "oauth" && cfg.APIKey != "" {
+			return fmt.Errorf("provider %q: auth=oauth but api_key is set (oauth uses captured Bearer tokens)", name)
+		}
+		// When auth is bedrock, api_key should be empty (uses AWS SigV4)
+		if cfg.Auth == "bedrock" && cfg.APIKey != "" {
+			return fmt.Errorf("provider %q: auth=bedrock but api_key is set (bedrock uses AWS SigV4)", name)
+		}
 	}
 	return nil
 }
@@ -121,6 +133,7 @@ type ResolvedProvider struct {
 	Provider string // Provider name (anthropic, gemini, openai)
 	Endpoint string
 	APIKey   string
+	Auth     string // Auth method: "api_key", "oauth", or "bedrock"
 	Model    string
 }
 
@@ -136,10 +149,17 @@ func (cfg *Config) ResolveProvider(providerName string) (*ResolvedProvider, erro
 		return nil, fmt.Errorf("provider %q not found in providers section", providerName)
 	}
 
+	// Default auth method is api_key if not specified
+	auth := provider.Auth
+	if auth == "" {
+		auth = "api_key"
+	}
+
 	return &ResolvedProvider{
 		Provider: providerName,
 		Endpoint: provider.GetEndpoint(providerName),
 		APIKey:   provider.APIKey,
+		Auth:     auth,
 		Model:    provider.Model,
 	}, nil
 }
