@@ -129,6 +129,9 @@ type ToolOutputConfig struct {
 	// Expand context feature
 	EnableExpandContext bool `yaml:"enable_expand_context"` // Inject expand_context tool
 	IncludeExpandHint   bool `yaml:"include_expand_hint"`   // Add hint to compressed content
+
+	// Skip compression for specific tools (e.g., Read, Edit — needed for exact matching)
+	SkipTools []string `yaml:"skip_tools,omitempty"`
 }
 
 // Validate validates tool output pipe config.

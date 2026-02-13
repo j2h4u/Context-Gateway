@@ -110,7 +110,28 @@ func (p *Pipe) compressAllTools(ctx *pipes.PipeContext) ([]byte, error) {
 	tasks := make([]compressionTask, 0, len(extracted))
 	var results []adapters.CompressedResult
 
+	// Resolve skip_tools categories to provider-specific tool names
+	skipSet := BuildSkipSet(p.skipCategories, ctx.Provider)
+
 	for _, ext := range extracted {
+		// Skip tools configured in skip_tools (resolved by provider)
+		if skipSet[ext.ToolName] {
+			log.Debug().
+				Str("tool", ext.ToolName).
+				Str("provider", string(ctx.Provider)).
+				Msg("tool_output: skipped by skip_tools config")
+			ctx.ToolOutputCompressions = append(ctx.ToolOutputCompressions, pipes.ToolOutputCompression{
+				ToolName:        ext.ToolName,
+				ToolCallID:      ext.ID,
+				OriginalBytes:   len(ext.Content),
+				CompressedBytes: len(ext.Content),
+				MappingStatus:   "skipped_by_config",
+				MinThreshold:    p.minBytes,
+				MaxThreshold:    p.maxBytes,
+			})
+			continue
+		}
+
 		contentSize := len(ext.Content)
 
 		// Skip if below min byte threshold - but record for tracking

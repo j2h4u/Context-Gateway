@@ -39,6 +39,9 @@ type PipeContext struct {
 	CapturedBearerToken string
 	CapturedBetaHeader  string // anthropic-beta header value from incoming request
 
+	// Provider of the incoming request (for provider-aware skip_tools)
+	Provider adapters.Provider
+
 	// Flags set by pipes
 	OutputCompressed bool
 	ToolsFiltered    bool
