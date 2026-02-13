@@ -177,6 +177,7 @@ func (r *Router) toPipeContext(ctx *PipelineContext) *pipes.PipeContext {
 	pipeCtx.CompressionThreshold = ctx.CompressionThreshold
 	pipeCtx.CapturedBearerToken = ctx.CapturedBearerToken
 	pipeCtx.CapturedBetaHeader = ctx.CapturedBetaHeader
+	pipeCtx.Provider = ctx.Provider
 	return pipeCtx
 }
 

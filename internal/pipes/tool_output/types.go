@@ -93,6 +93,9 @@ type Pipe struct {
 
 	// V2: Idempotent tools (E5: safe to re-execute)
 	idempotentTools map[string]bool
+
+	// Tools to skip compression for, as generic categories (e.g., "read", "edit")
+	skipCategories []string
 }
 
 // Metrics tracks compression statistics (V2)
@@ -235,6 +238,9 @@ func New(cfg *config.Config, st store.Store) *Pipe {
 		"semantic_search": true,
 	}
 
+	// Store skip categories from config
+	skipCategories := cfg.Pipes.ToolOutput.SkipTools
+
 	// API timeout default
 	apiTimeout := cfg.Pipes.ToolOutput.API.Timeout
 	if apiTimeout == 0 {
@@ -268,11 +274,17 @@ func New(cfg *config.Config, st store.Store) *Pipe {
 
 		// V2: Idempotent tools
 		idempotentTools: idempotentTools,
+
+		// Skip tools (categories resolved per-request based on provider)
+		skipCategories: skipCategories,
 	}
 
 	// Log warning if no API key configured (will rely on captured Bearer token from requests)
 	if p.apiKey == "" && cfg.Pipes.ToolOutput.Strategy == config.StrategyExternalProvider {
 		log.Info().Msg("tool_output: no API key configured, will use captured Bearer token from incoming requests")
+	}
+	if len(skipCategories) > 0 {
+		log.Info().Strs("categories", skipCategories).Msg("tool_output: skip_tools categories configured (resolved per-request by provider)")
 	}
 
 	return p
