@@ -24,6 +24,7 @@ func NewRegistry() *Registry {
 	r.Register(NewAnthropicAdapter())
 	r.Register(NewOpenAIAdapter())
 	r.Register(NewBedrockAdapter())
+	r.Register(NewOllamaAdapter())
 
 	return r
 }
