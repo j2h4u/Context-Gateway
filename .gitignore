@@ -62,5 +62,6 @@ benchmarks/src/__pycache__/*
 *.py[cod]
 *.egg-info/
 .build/
-docs/
+docs/*
+!docs/quickstart/
 .aider*

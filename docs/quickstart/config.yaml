@@ -1,0 +1,50 @@
+# Context Gateway — tool output compression (v0.3.0)
+#
+# OAuth: no API key needed — gateway captures the Bearer token
+# from incoming Claude Code requests automatically.
+
+metadata:
+  name: "Context Gateway"
+  strategy: "passthrough"
+
+server:
+  port: ${GATEWAY_PORT:-18080}
+  read_timeout: 30s
+  write_timeout: 1000s
+
+providers:
+  anthropic:
+    model: "claude-haiku-4-5-20251001"
+
+preemptive:
+  enabled: false
+
+pipes:
+  tool_output:
+    enabled: true
+    strategy: "external_provider"
+    provider: "anthropic"
+    fallback_strategy: "passthrough"
+    min_bytes: 1536
+    max_bytes: 1048576
+    target_ratio: 0.5
+    enable_expand_context: true
+    include_expand_hint: true
+    skip_tools: ["read", "edit", "write"]
+    api:
+      timeout: 30s
+      query_agnostic: true
+  tool_discovery:
+    enabled: false
+
+store:
+  type: "memory"
+  ttl: 1h
+
+monitoring:
+  log_level: "info"
+  log_format: "console"
+  log_output: "stdout"
+  telemetry_enabled: true
+  telemetry_path: "logs/telemetry.jsonl"
+  compression_log_path: "logs/compression.jsonl"
