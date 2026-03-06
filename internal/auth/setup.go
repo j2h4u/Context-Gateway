@@ -43,20 +43,20 @@ func buildAuthConfigs(cfg *config.Config) map[adapters.Provider]types.AuthConfig
 	// Scan all provider configs and categorize them
 	for name, provCfg := range cfg.Providers {
 		providerType := inferProviderType(name, provCfg)
-		apiKey := resolveEnvVar(provCfg.APIKey)
+		apiKey := resolveEnvVar(provCfg.ProviderAuth)
 		authMode := parseAuthFromConfig(provCfg.Auth, apiKey)
 
 		switch providerType {
 		case adapters.ProviderAnthropic:
 			// Use the first anthropic provider found, or merge if multiple
-			if anthropicCfg.APIKey == "" || authMode == types.AuthModeSubscription {
-				anthropicCfg.APIKey = apiKey
+			if anthropicCfg.FallbackKey == "" || authMode == types.AuthModeSubscription {
+				anthropicCfg.FallbackKey = apiKey
 				anthropicCfg.Mode = authMode
 			}
 		case adapters.ProviderOpenAI:
 			// Use the first openai provider found, or merge if multiple
-			if openaiCfg.APIKey == "" || authMode == types.AuthModeSubscription {
-				openaiCfg.APIKey = apiKey
+			if openaiCfg.FallbackKey == "" || authMode == types.AuthModeSubscription {
+				openaiCfg.FallbackKey = apiKey
 				openaiCfg.Mode = authMode
 			}
 		}

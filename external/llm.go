@@ -50,8 +50,8 @@ type CallLLMParams struct {
 	Provider string
 
 	Endpoint     string
-	APISecret    string
-	BearerAuth   string // OAuth token (Authorization: Bearer). Takes precedence over APISecret for Anthropic.
+	ProviderKey  string
+	BearerAuth   string // OAuth token (Authorization: Bearer). Takes precedence over ProviderKey for Anthropic.
 	Model        string
 	SystemPrompt string
 	UserPrompt   string
@@ -82,7 +82,7 @@ func (p *CallLLMParams) validate() error {
 	}
 	// Bedrock uses SigV4 signing via HTTPClient transport, not an API key.
 	// OAuth uses BearerToken instead of APIKey.
-	if p.APISecret == "" && p.BearerAuth == "" && p.Provider != "bedrock" {
+	if p.ProviderKey == "" && p.BearerAuth == "" && p.Provider != "bedrock" {
 		return fmt.Errorf("api key or bearer token required")
 	}
 	if p.Model == "" {
@@ -135,7 +135,7 @@ func CallLLM(ctx context.Context, params CallLLMParams) (*CallLLMResult, error) 
 	}
 
 	req.Header.Set("Content-Type", "application/json")
-	setAuthHeaders(req, provider, params.APISecret, params.BearerAuth)
+	setAuthHeaders(req, provider, params.ProviderKey, params.BearerAuth)
 	for k, v := range params.ExtraHeaders {
 		req.Header.Set(k, v)
 	}

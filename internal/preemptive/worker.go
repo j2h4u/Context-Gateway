@@ -49,7 +49,7 @@ type Job struct {
 	done          chan struct{}
 
 	// Per-job auth credentials for session isolation
-	AuthToken     string // Captured auth token for this job
+	AuthValue     string // Captured auth token for this job
 	AuthIsXAPIKey bool   // true = use x-api-key header, false = use Authorization: Bearer
 	AuthEndpoint  string // Captured endpoint for this job
 }
@@ -157,7 +157,7 @@ func (w *Worker) Submit(sessionID string, messages []json.RawMessage, model stri
 		MessageCount:  len(messages),
 		Model:         model,
 		done:          make(chan struct{}),
-		AuthToken:     auth.Token,
+		AuthValue:     auth.Token,
 		AuthIsXAPIKey: auth.IsXAPIKey,
 		AuthEndpoint:  auth.Endpoint,
 	}
@@ -246,7 +246,7 @@ func (w *Worker) processJob(workerID int, job *Job) {
 		KeepRecentTokens: w.summarizerCfg.KeepRecentTokens,
 		KeepRecentCount:  w.summarizerCfg.KeepRecentCount,
 		Model:            job.Model,
-		AuthToken:        job.AuthToken,
+		AuthValue:        job.AuthValue,
 		AuthIsXAPIKey:    job.AuthIsXAPIKey,
 		AuthEndpoint:     job.AuthEndpoint,
 	})

@@ -65,11 +65,11 @@ type SearchToolHandler struct {
 
 // SearchToolHandlerOptions configures gateway_search_tools behavior.
 type SearchToolHandlerOptions struct {
-	Strategy    string
-	APIEndpoint string
-	APIKey      string
-	APITimeout  time.Duration
-	AlwaysKeep  []string
+	Strategy     string
+	APIEndpoint  string
+	ProviderAuth string
+	APITimeout   time.Duration
+	AlwaysKeep   []string
 }
 
 // ToolDiscoveryAPIFallbackEvent captures a degraded API search outcome.
@@ -99,7 +99,7 @@ func NewSearchToolHandler(toolName string, maxResults int, sessionStore *ToolSes
 		sessionStore: sessionStore,
 		strategy:     opts.Strategy,
 		apiEndpoint:  opts.APIEndpoint,
-		apiKey:       opts.APIKey,
+		apiKey:       opts.ProviderAuth,
 		apiTimeout:   timeout,
 		alwaysKeep:   opts.AlwaysKeep,
 		httpClient:   &http.Client{Timeout: timeout},

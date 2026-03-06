@@ -519,7 +519,7 @@ func cfg(endpoint string) *config.Config {
 				MinBytes:         10,
 				Compresr: pipes.CompresrConfig{
 					Endpoint:      endpoint,
-					APIKey:     "test-key",
+					AuthParam:     "test-key",
 					Model:         "gpt-5-nano",
 					Timeout:       30 * time.Second,
 					QueryAgnostic: false,
@@ -545,7 +545,7 @@ func cfgAnthropic(endpoint string) *config.Config {
 				MinBytes:         10,
 				Compresr: pipes.CompresrConfig{
 					Endpoint:      endpoint,
-					APIKey:     "test-key",
+					AuthParam:     "test-key",
 					Model:         "claude-haiku-4-5",
 					Timeout:       30 * time.Second,
 					QueryAgnostic: false,
@@ -565,7 +565,7 @@ func cfgWithFallback(endpoint string) *config.Config {
 				MinBytes:         10,
 				Compresr: pipes.CompresrConfig{
 					Endpoint:  endpoint,
-					APIKey: "key",
+					AuthParam: "key",
 					Model:     "gpt-5-nano",
 					Timeout:   5 * time.Second,
 				},
@@ -584,7 +584,7 @@ func cfgWithTimeout(endpoint string) *config.Config {
 				MinBytes:         10,
 				Compresr: pipes.CompresrConfig{
 					Endpoint:  endpoint,
-					APIKey: "key",
+					AuthParam: "key",
 					Model:     "gpt-5-nano",
 					Timeout:   100 * time.Millisecond, // Short timeout
 				},
@@ -602,7 +602,7 @@ func cfgHighMinBytes(endpoint string) *config.Config {
 				MinBytes: 1000, // High threshold
 				Compresr: pipes.CompresrConfig{
 					Endpoint:  endpoint,
-					APIKey: "key",
+					AuthParam: "key",
 					Model:     "gpt-5-nano",
 					Timeout:   5 * time.Second,
 				},

@@ -76,7 +76,7 @@ type SummarizerConfig struct {
 
 	// Inline settings (used if Provider is not set, or for overrides)
 	Model              string        `yaml:"model"`
-	APISecret          string        `yaml:"api_key"`
+	ProviderKey        string        `yaml:"api_key"`
 	Endpoint           string        `yaml:"endpoint"`
 	MaxTokens          int           `yaml:"max_tokens"`
 	Timeout            time.Duration `yaml:"timeout"`
@@ -95,10 +95,10 @@ type SummarizerConfig struct {
 
 // CompresrConfig for Compresr API compression.
 type CompresrConfig struct {
-	Endpoint string        `yaml:"endpoint"` // e.g., "/api/compress/history/"
-	APIKey   string        `yaml:"api_key"`
-	Model    string        `yaml:"model"` // e.g., "hcc_espresso_v1"
-	Timeout  time.Duration `yaml:"timeout"`
+	Endpoint  string        `yaml:"endpoint"` // e.g., "/api/compress/history/"
+	AuthParam string        `yaml:"api_key"`
+	Model     string        `yaml:"model"` // e.g., "hcc_espresso_v1"
+	Timeout   time.Duration `yaml:"timeout"`
 }
 
 // SessionConfig configures session management.
@@ -169,7 +169,7 @@ func (c *Config) Validate() error {
 		if c.Summarizer.Compresr.Endpoint == "" {
 			return fmt.Errorf("summarizer.compresr.endpoint is required")
 		}
-		if c.Summarizer.Compresr.APIKey == "" {
+		if c.Summarizer.Compresr.AuthParam == "" {
 			return fmt.Errorf("summarizer.compresr.api_key is required")
 		}
 		if c.Summarizer.Compresr.Model == "" {

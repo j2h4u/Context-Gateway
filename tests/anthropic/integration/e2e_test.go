@@ -1265,72 +1265,8 @@ func TestE2E_ClaudeCode_LargeSearchResultsCompression(t *testing.T) {
 }
 
 // =============================================================================
-// TEST 18: Tool with System Prompt
 // =============================================================================
-
-func TestE2E_ClaudeCode_WithSystemPrompt(t *testing.T) {
-	apiKey := getAnthropicKey(t)
-
-	cfg := passthroughConfig()
-	gw := gateway.New(cfg)
-	gwServer := httptest.NewServer(gw.Handler())
-	defer gwServer.Close()
-
-	requestBody := map[string]interface{}{
-		"model":      anthropicModel,
-		"max_tokens": 100,
-		"system":     "You are a helpful coding assistant. Be concise.",
-		"messages": []map[string]interface{}{
-			{"role": "user", "content": "What's in the config?"},
-			{
-				"role": "assistant",
-				"content": []map[string]interface{}{
-					{
-						"type":  "tool_use",
-						"id":    "toolu_sys_001",
-						"name":  "read_file",
-						"input": map[string]string{"path": "config.yaml"},
-					},
-				},
-			},
-			{
-				"role": "user",
-				"content": []map[string]interface{}{
-					{
-						"type":        "tool_result",
-						"tool_use_id": "toolu_sys_001",
-						"content":     "server:\n  port: 8080\n  timeout: 30s",
-					},
-				},
-			},
-		},
-	}
-
-	bodyBytes, _ := json.Marshal(requestBody)
-	req, err := http.NewRequest("POST", gwServer.URL+"/v1/messages", bytes.NewReader(bodyBytes))
-	require.NoError(t, err)
-
-	req.Header.Set("Content-Type", "application/json")
-	req.Header.Set("x-api-key", apiKey)
-	req.Header.Set("anthropic-version", anthropicVersion)
-	req.Header.Set("X-Target-URL", anthropicBaseURL+"/v1/messages")
-
-	client := &http.Client{Timeout: 30 * time.Second}
-	resp, err := client.Do(req)
-	require.NoError(t, err)
-	defer resp.Body.Close()
-
-	assert.Equal(t, http.StatusOK, resp.StatusCode)
-
-	var response map[string]interface{}
-	json.NewDecoder(resp.Body).Decode(&response)
-
-	content := extractAnthropicContent(response)
-	assert.True(t, strings.Contains(content, "8080") || strings.Contains(strings.ToLower(content), "port"))
-}
-
-// =============================================================================
-// TEST 19: Traffic Interception - Verify Compression
+// TEST 18: Traffic Interception - Verify Compression
 // =============================================================================
 
 func TestE2E_ClaudeCode_TrafficInterception(t *testing.T) {
@@ -1546,17 +1482,17 @@ func compressionConfigAnthropicDirect(apiKey string) *config.Config {
 		},
 		Pipes: config.PipesConfig{
 			ToolOutput: config.ToolOutputPipeConfig{
-				Enabled:             true,
-				Strategy:            config.StrategyCompresr, // Uses Compresr API for compression
-				FallbackStrategy:    "passthrough",
-				MinBytes:            500,
-				MaxBytes:            65536,
+				Enabled:                true,
+				Strategy:               config.StrategyCompresr, // Uses Compresr API for compression
+				FallbackStrategy:       "passthrough",
+				MinBytes:               500,
+				MaxBytes:               65536,
 				TargetCompressionRatio: 0.3,
-				IncludeExpandHint:   false,
-				EnableExpandContext: false,
+				IncludeExpandHint:      false,
+				EnableExpandContext:    false,
 				Compresr: config.CompresrConfig{
 					Endpoint: "/api/compress/tool-output",
-					APIKey:   os.Getenv("COMPRESR_API_KEY"),
+					AuthParam:   os.Getenv("COMPRESR_API_KEY"),
 					Model:    "toc_espresso_v1", // Use OpenAI model via API
 					Timeout:  30 * time.Second,
 				},

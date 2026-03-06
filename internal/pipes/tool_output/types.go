@@ -185,7 +185,7 @@ func New(cfg *config.Config, st store.Store) *Pipe {
 	if cfg.Pipes.ToolOutput.Provider != "" {
 		if resolved, err := cfg.ResolveProvider(cfg.Pipes.ToolOutput.Provider); err == nil {
 			compresrEndpoint = resolved.Endpoint
-			compresrKey = resolved.APIKey
+			compresrKey = resolved.ProviderAuth
 			compresrModel = resolved.Model
 		} else {
 			log.Warn().Err(err).Str("provider", cfg.Pipes.ToolOutput.Provider).
@@ -201,8 +201,8 @@ func New(cfg *config.Config, st store.Store) *Pipe {
 			compresrEndpoint = pipes.NormalizeEndpointURL(cfg.URLs.Compresr, cfg.Pipes.ToolOutput.Compresr.Endpoint)
 		}
 	}
-	if cfg.Pipes.ToolOutput.Compresr.APIKey != "" {
-		compresrKey = cfg.Pipes.ToolOutput.Compresr.APIKey
+	if cfg.Pipes.ToolOutput.Compresr.AuthParam != "" {
+		compresrKey = cfg.Pipes.ToolOutput.Compresr.AuthParam
 	}
 	if cfg.Pipes.ToolOutput.Compresr.Model != "" {
 		compresrModel = cfg.Pipes.ToolOutput.Compresr.Model

@@ -101,8 +101,19 @@ func getLatestVersion() (string, error) {
 	return release.TagName, nil
 }
 
-// CheckForUpdates checks if a newer version is available
-// Called on gateway startup
+// printUpdateNotification prints the update notification box.
+func printUpdateNotification(current, latest string) {
+	fmt.Printf("\n")
+	fmt.Printf("%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", colorYellow, colorBold, colorReset)
+	fmt.Printf("%s%s  🔄 UPDATE AVAILABLE: %s → %s%s\n", colorYellow, colorBold, current, latest, colorReset)
+	fmt.Printf("%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", colorYellow, colorBold, colorReset)
+	fmt.Printf("\n")
+	fmt.Printf("  Run: %scontext-gateway update%s\n", colorCyan, colorReset)
+	fmt.Printf("\n")
+}
+
+// CheckForUpdates checks if a newer version is available.
+// Called on gateway startup (serve mode).
 func CheckForUpdates() {
 	current := getCurrentVersion()
 
@@ -116,14 +127,39 @@ func CheckForUpdates() {
 		return
 	}
 
-	// Show update notification
-	fmt.Printf("\n")
-	fmt.Printf("%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", colorYellow, colorBold, colorReset)
-	fmt.Printf("%s%s  🔄 UPDATE AVAILABLE: %s → %s%s\n", colorYellow, colorBold, current, latest, colorReset)
-	fmt.Printf("%s%s━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━%s\n", colorYellow, colorBold, colorReset)
-	fmt.Printf("\n")
-	fmt.Printf("  Run: %scontext-gateway update%s\n", colorCyan, colorReset)
-	fmt.Printf("\n")
+	printUpdateNotification(current, latest)
+}
+
+// updateCheckResult holds the result of an async update check.
+type updateCheckResult struct {
+	current string
+	latest  string
+	err     error
+}
+
+// CheckForUpdatesAsync starts a background version check and returns a function
+// that, when called, waits up to 5 seconds for the result and prints any
+// available update notification. This lets the check run in parallel with
+// other startup work so it never blocks the user.
+func CheckForUpdatesAsync() func() {
+	ch := make(chan updateCheckResult, 1)
+	go func() {
+		current := getCurrentVersion()
+		latest, err := getLatestVersion()
+		ch <- updateCheckResult{current: current, latest: latest, err: err}
+	}()
+
+	return func() {
+		select {
+		case r := <-ch:
+			if r.err != nil || r.current == r.latest {
+				return
+			}
+			printUpdateNotification(r.current, r.latest)
+		case <-time.After(5 * time.Second):
+			// Version check timed out - skip silently
+		}
+	}
 }
 
 // DoUpdate downloads and installs the latest version

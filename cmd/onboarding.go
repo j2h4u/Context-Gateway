@@ -107,7 +107,7 @@ const (
 	compresrTokenURL        = compresrFrontendBaseURL + "/dashboard/tokens" // #nosec G101 -- URL, not credentials
 
 	// Backend base URL - WebSocket auth endpoint lives here
-	compresrBackendBaseURL = "http://localhost:8000"
+	compresrBackendBaseURL = config.DefaultCompresrAPIBaseURL // "https://api.compresr.ai"
 )
 
 // isCompresrAPIKeySet checks if the Compresr API key is configured.

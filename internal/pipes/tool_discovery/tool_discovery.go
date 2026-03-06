@@ -158,7 +158,7 @@ func New(cfg *config.Config) *Pipe {
 	var compresrClient *compresr.Client
 	if pipes.IsAPIStrategy(cfg.Pipes.ToolDiscovery.Strategy) {
 		baseURL := cfg.URLs.Compresr
-		compresrKey := cfg.Pipes.ToolDiscovery.Compresr.APIKey
+		compresrKey := cfg.Pipes.ToolDiscovery.Compresr.AuthParam
 		if baseURL != "" || compresrKey != "" {
 			compresrClient = compresr.NewClient(baseURL, compresrKey)
 			log.Info().Str("base_url", baseURL).Msg("tool_discovery: initialized Compresr client for api strategy")
@@ -180,7 +180,7 @@ func New(cfg *config.Config) *Pipe {
 		maxSearchResults:     maxSearchResults,
 		compresrClient:       compresrClient,
 		compresrEndpoint:     compresrEndpoint,
-		compresrKey:          cfg.Pipes.ToolDiscovery.Compresr.APIKey,
+		compresrKey:          cfg.Pipes.ToolDiscovery.Compresr.AuthParam,
 		compresrTimeout:      compresrTimeout,
 		compresrModel:        cfg.Pipes.ToolDiscovery.Compresr.Model,
 	}

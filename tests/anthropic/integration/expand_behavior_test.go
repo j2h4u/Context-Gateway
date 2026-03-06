@@ -788,7 +788,7 @@ func configWithExpandEnabled(mockAPIURL string) *config.Config {
 				EnableExpandContext: true, // ENABLED
 				Compresr: config.CompresrConfig{
 					Endpoint: apiEndpoint,
-					APIKey:   os.Getenv("COMPRESR_API_KEY"),
+					AuthParam:   os.Getenv("COMPRESR_API_KEY"),
 					Model:    "toc_espresso_v1",
 					Timeout:  30 * time.Second,
 				},
@@ -828,7 +828,7 @@ func configWithExpandDisabled() *config.Config {
 				EnableExpandContext: false, // DISABLED
 				Compresr: config.CompresrConfig{
 					Endpoint: "",
-					APIKey:   "",
+					AuthParam:   "",
 					Model:    "",
 					Timeout:  30 * time.Second,
 				},

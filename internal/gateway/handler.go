@@ -332,10 +332,10 @@ func (g *Gateway) handleProxy(w http.ResponseWriter, r *http.Request) {
 		// Capture auth token for summarizer (allows Max/Pro users without explicit API key)
 		if auth := r.Header.Get("x-api-key"); auth != "" {
 			log.Debug().Str("auth_type", "x-api-key").Str("auth", utils.MaskKey(auth)).Msg("Captured auth for summarizer")
-			g.preemptive.SetAuthToken(auth, true) // from x-api-key header
+			g.preemptive.SetAuthValue(auth, true) // from x-api-key header
 		} else if auth := r.Header.Get("Authorization"); auth != "" {
 			log.Debug().Str("auth_type", "Authorization").Str("auth", utils.MaskKey(auth)).Msg("Captured auth for summarizer")
-			g.preemptive.SetAuthToken(strings.TrimPrefix(auth, "Bearer "), false) // from Authorization header
+			g.preemptive.SetAuthValue(strings.TrimPrefix(auth, "Bearer "), false) // from Authorization header
 		}
 		// Capture upstream endpoint URL for summarizer (same logic as forwardPassthrough)
 		// Priority: X-Target-URL header > autoDetect

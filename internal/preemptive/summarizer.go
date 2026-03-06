@@ -30,10 +30,10 @@ func NewSummarizer(cfg SummarizerConfig) *Summarizer {
 	return &Summarizer{config: cfg}
 }
 
-// SetAuthToken stores an auth token captured from incoming requests.
+// SetAuthValue stores an auth token captured from incoming requests.
 // Used when no API key is configured (e.g., Max/Pro subscription users).
 // isFromXAPIKeyHeader indicates if token came from x-api-key header (vs Authorization: Bearer).
-func (s *Summarizer) SetAuthToken(token string, isFromXAPIKeyHeader bool) {
+func (s *Summarizer) SetAuthValue(token string, isFromXAPIKeyHeader bool) {
 	if token == "" {
 		return
 	}
@@ -53,11 +53,11 @@ func (s *Summarizer) SetEndpoint(endpoint string) {
 	s.capturedEndpoint = endpoint
 }
 
-// getAuthToken returns the best available auth token and whether to use x-api-key header.
-func (s *Summarizer) getAuthToken() (string, bool) {
+// getAuthValue returns the best available auth token and whether to use x-api-key header.
+func (s *Summarizer) getAuthValue() (string, bool) {
 	// Priority 1: Configured API key (always use x-api-key)
-	if s.config.APISecret != "" {
-		return s.config.APISecret, true
+	if s.config.ProviderKey != "" {
+		return s.config.ProviderKey, true
 	}
 	// Priority 2: Captured from request - mirror original header format
 	s.authMutex.RLock()
@@ -69,7 +69,7 @@ func (s *Summarizer) getAuthToken() (string, bool) {
 func (s *Summarizer) getEndpoint() string {
 	// When using captured auth (no configured API key), prefer captured endpoint
 	// because OAuth tokens are only valid for the endpoint they were issued for
-	if s.config.APISecret == "" {
+	if s.config.ProviderKey == "" {
 		s.authMutex.RLock()
 		captured := s.capturedEndpoint
 		s.authMutex.RUnlock()
@@ -102,7 +102,7 @@ type SummarizeInput struct {
 
 	// Per-job auth credentials for session isolation
 	// When set, these override global captured auth to prevent cross-session leakage
-	AuthToken     string // Auth token for this specific job
+	AuthValue     string // Auth token for this specific job
 	AuthIsXAPIKey bool   // true = use x-api-key header
 	AuthEndpoint  string // Endpoint for this specific job
 }
@@ -217,7 +217,7 @@ func (s *Summarizer) summarizeViaAPI(ctx context.Context, input SummarizeInput) 
 
 	// Call Compresr API — use CompresrBaseURL (e.g., "https://api.compresr.ai"), NOT the endpoint path.
 	// The client appends "/api/compress/history/" internally.
-	client := compresr.NewClient(s.config.CompresrBaseURL, s.config.Compresr.APIKey, compresr.WithTimeout(s.config.Compresr.Timeout))
+	client := compresr.NewClient(s.config.CompresrBaseURL, s.config.Compresr.AuthParam, compresr.WithTimeout(s.config.Compresr.Timeout))
 	response, err := client.CompressHistory(compresr.CompressHistoryParams{
 		Messages:   historyMessages,
 		KeepRecent: keepRecent,
@@ -355,14 +355,14 @@ func (s *Summarizer) callAPI(ctx context.Context, systemPrompt, userContent stri
 	// provider (e.g., Anthropic key) and must not override the configured key.
 	apiKey := ""
 	keySource := ""
-	if s.config.APISecret != "" {
-		apiKey = s.config.APISecret
-		keySource = "config.APISecret"
-	} else if input.AuthToken != "" {
-		apiKey = input.AuthToken
-		keySource = "input.AuthToken"
+	if s.config.ProviderKey != "" {
+		apiKey = s.config.ProviderKey
+		keySource = "config.ProviderKey"
+	} else if input.AuthValue != "" {
+		apiKey = input.AuthValue
+		keySource = "input.AuthValue"
 	} else {
-		apiKey, _ = s.getAuthToken()
+		apiKey, _ = s.getAuthValue()
 		keySource = "captured auth"
 	}
 
@@ -376,7 +376,7 @@ func (s *Summarizer) callAPI(ctx context.Context, systemPrompt, userContent stri
 	params := external.CallLLMParams{
 		Provider:     s.config.Provider,
 		Endpoint:     endpoint,
-		APISecret:    apiKey,
+		ProviderKey:  apiKey,
 		Model:        s.config.Model,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userContent,

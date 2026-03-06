@@ -1014,7 +1014,7 @@ func expandContextEnabledConfig() *config.Config {
 				EnableExpandContext: true, // Enable expand_context
 				Compresr: config.CompresrConfig{
 					Endpoint: "/api/compress/tool-output",
-					APIKey:   os.Getenv("COMPRESR_API_KEY"),
+					AuthParam:   os.Getenv("COMPRESR_API_KEY"),
 					Model:    "toc_espresso_v1",
 					Timeout:  30 * time.Second,
 				},

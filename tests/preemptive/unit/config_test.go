@@ -29,7 +29,7 @@ func TestConfig_Validate_ValidConfig(t *testing.T) {
 		TriggerThreshold: 80.0,
 		Summarizer: preemptive.SummarizerConfig{
 			Model:           "claude-haiku-4-5",
-			APISecret:       "test-api-key",
+			ProviderKey:       "test-api-key",
 			MaxTokens:       4096,
 			Timeout:         60 * time.Second,
 			KeepRecentCount: 10,
@@ -85,7 +85,7 @@ func TestConfig_Validate_MissingSummarizerModel(t *testing.T) {
 
 func TestConfig_Validate_MissingAPIKey(t *testing.T) {
 	cfg := validConfig()
-	cfg.Summarizer.APISecret = ""
+	cfg.Summarizer.ProviderKey = ""
 
 	// API key is optional - can be captured from incoming requests (Max/Pro/Teams users)
 	err := cfg.Validate()
@@ -164,7 +164,7 @@ func TestConfig_Validate_ValidAPIStrategy(t *testing.T) {
 			Strategy: preemptive.StrategyCompresr,
 			Compresr: &preemptive.CompresrConfig{
 				Endpoint: "/api/compress/history/",
-				APIKey:   "cmp_test-key",
+				AuthParam:   "cmp_test-key",
 				Model:    "hcc_espresso_v1",
 				Timeout:  60 * time.Second,
 			},
@@ -198,7 +198,7 @@ func TestConfig_Validate_APIStrategyMissingEndpoint(t *testing.T) {
 		Strategy: preemptive.StrategyCompresr,
 		Compresr: &preemptive.CompresrConfig{
 			Endpoint: "",
-			APIKey:   "cmp_test-key",
+			AuthParam:   "cmp_test-key",
 			Model:    "hcc_espresso_v1",
 			Timeout:  60 * time.Second,
 		},
@@ -215,7 +215,7 @@ func TestConfig_Validate_APIStrategyMissingAPIKey(t *testing.T) {
 		Strategy: preemptive.StrategyCompresr,
 		Compresr: &preemptive.CompresrConfig{
 			Endpoint: "/api/compress/history/",
-			APIKey:   "",
+			AuthParam:   "",
 			Model:    "hcc_espresso_v1",
 			Timeout:  60 * time.Second,
 		},
@@ -232,7 +232,7 @@ func TestConfig_Validate_APIStrategyMissingModel(t *testing.T) {
 		Strategy: preemptive.StrategyCompresr,
 		Compresr: &preemptive.CompresrConfig{
 			Endpoint: "/api/compress/history/",
-			APIKey:   "cmp_test-key",
+			AuthParam:   "cmp_test-key",
 			Model:    "",
 			Timeout:  60 * time.Second,
 		},
@@ -249,7 +249,7 @@ func TestConfig_Validate_APIStrategyMissingTimeout(t *testing.T) {
 		Strategy: preemptive.StrategyCompresr,
 		Compresr: &preemptive.CompresrConfig{
 			Endpoint: "/api/compress/history/",
-			APIKey:   "cmp_test-key",
+			AuthParam:   "cmp_test-key",
 			Model:    "hcc_espresso_v1",
 			Timeout:  0,
 		},
@@ -288,7 +288,7 @@ func validConfig() preemptive.Config {
 		TriggerThreshold: 80.0,
 		Summarizer: preemptive.SummarizerConfig{
 			Model:           "claude-haiku-4-5",
-			APISecret:       "test-api-key",
+			ProviderKey:       "test-api-key",
 			MaxTokens:       4096,
 			Timeout:         60 * time.Second,
 			KeepRecentCount: 10,

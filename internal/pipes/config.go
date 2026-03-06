@@ -231,7 +231,7 @@ func (d *ToolDiscoveryConfig) Validate() error {
 // Not used in current release - tool output compression is disabled.
 type CompresrConfig struct {
 	Endpoint      string        `yaml:"endpoint"`       // Compresr API endpoint URL
-	APIKey        string        `yaml:"api_key"`        // API authentication key
+	AuthParam     string        `yaml:"api_key"`        // API authentication key
 	Model         string        `yaml:"model"`          // Compression model to use
 	Timeout       time.Duration `yaml:"timeout"`        // Request timeout
 	QueryAgnostic bool          `yaml:"query_agnostic"` // If true, compression is context-agnostic

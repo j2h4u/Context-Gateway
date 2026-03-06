@@ -134,7 +134,7 @@ func TestGateway_SubscriptionFallback_RetriesWithAPIKey(t *testing.T) {
 	cfg := passthroughConfig()
 	cfg.Providers = config.ProvidersConfig{
 		"anthropic": {
-			APIKey: "sk-ant-api03-fallback-key",
+			ProviderAuth: "sk-ant-api03-fallback-key",
 			Model:  "claude-3-5-sonnet-latest",
 		},
 	}
@@ -190,7 +190,7 @@ func TestGateway_SubscriptionFallback_StickyPerSession(t *testing.T) {
 	cfg := passthroughConfig()
 	cfg.Providers = config.ProvidersConfig{
 		"anthropic": {
-			APIKey: "sk-ant-api03-fallback-key",
+			ProviderAuth: "sk-ant-api03-fallback-key",
 			Model:  "claude-3-5-sonnet-latest",
 		},
 	}
@@ -256,7 +256,7 @@ func TestGateway_AuthFallback_TelemetryAndInitLogs(t *testing.T) {
 	cfg.Monitoring.TelemetryPath = telemetryPath
 	cfg.Providers = config.ProvidersConfig{
 		"anthropic": {
-			APIKey: "sk-ant-api03-fallback-key",
+			ProviderAuth: "sk-ant-api03-fallback-key",
 			Model:  "claude-3-5-sonnet-latest",
 		},
 	}

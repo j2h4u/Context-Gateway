@@ -814,7 +814,7 @@ func hardCompressionConfigOpenAI() *config.Config {
 				EnableExpandContext: true,
 				Compresr: config.CompresrConfig{
 					Endpoint:  os.Getenv("COMPRESR_API_URL") + "/api/compress/tool-output",
-					APIKey: os.Getenv("COMPRESR_API_KEY"),
+					AuthParam: os.Getenv("COMPRESR_API_KEY"),
 					Model:     "toc_espresso_v1",
 					Timeout:   30 * time.Second,
 				},
