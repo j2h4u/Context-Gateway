@@ -10,6 +10,7 @@ import (
 	"fmt"
 	"strings"
 	"sync"
+	"time"
 
 	"github.com/coder/websocket"
 )
@@ -87,6 +88,7 @@ func (ac *AuthClient) Connect(ctx context.Context) (authorizeURL string, err err
 
 // WaitForToken blocks until the backend pushes a token over the WebSocket.
 // Must be called after Connect. The context controls the timeout.
+// Sends periodic pings to keep the connection alive (server closes idle sessions after 5 min).
 func (ac *AuthClient) WaitForToken(ctx context.Context) (string, error) {
 	ac.mu.Lock()
 	conn := ac.conn
@@ -96,21 +98,48 @@ func (ac *AuthClient) WaitForToken(ctx context.Context) (string, error) {
 		return "", fmt.Errorf("not connected (call Connect first)")
 	}
 
-	var msg wsMessage
-	if err := ac.readMessage(ctx, &msg); err != nil {
-		return "", fmt.Errorf("failed waiting for token: %w", err)
-	}
-
-	switch msg.Type {
-	case "token":
-		if msg.Token == "" {
-			return "", fmt.Errorf("received empty token from server")
+	// Send a ping every 60s to prevent server-side session expiry (5 min timeout).
+	pingCtx, cancelPing := context.WithCancel(ctx)
+	defer cancelPing()
+	go func() {
+		ticker := time.NewTicker(60 * time.Second)
+		defer ticker.Stop()
+		for {
+			select {
+			case <-pingCtx.Done():
+				return
+			case <-ticker.C:
+				ac.mu.Lock()
+				c := ac.conn
+				ac.mu.Unlock()
+				if c == nil {
+					return
+				}
+				_ = c.Write(pingCtx, websocket.MessageText, []byte("ping"))
+			}
 		}
-		return msg.Token, nil
-	case "error":
-		return "", fmt.Errorf("authorization error: %s", msg.Error)
-	default:
-		return "", fmt.Errorf("unexpected message type: %s (expected token)", msg.Type)
+	}()
+
+	for {
+		var msg wsMessage
+		if err := ac.readMessage(ctx, &msg); err != nil {
+			return "", fmt.Errorf("failed waiting for token: %w", err)
+		}
+
+		switch msg.Type {
+		case "token":
+			if msg.Token == "" {
+				return "", fmt.Errorf("received empty token from server")
+			}
+			return msg.Token, nil
+		case "error":
+			return "", fmt.Errorf("authorization error: %s", msg.Error)
+		case "pong":
+			// keepalive response, continue waiting
+			continue
+		default:
+			return "", fmt.Errorf("unexpected message type: %s (expected token)", msg.Type)
+		}
 	}
 }
 

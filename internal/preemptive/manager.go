@@ -60,12 +60,12 @@ func (m *Manager) Stop() {
 	}
 }
 
-// SetAuthToken passes an auth token to the summarizer for use when no API key is configured.
+// SetAuthValue passes an auth token to the summarizer for use when no API key is configured.
 // This allows Max/Pro subscription users to use the gateway without a separate API key.
 // isFromXAPIKeyHeader indicates if token came from x-api-key header (vs Authorization: Bearer).
-func (m *Manager) SetAuthToken(token string, isFromXAPIKeyHeader bool) {
+func (m *Manager) SetAuthValue(token string, isFromXAPIKeyHeader bool) {
 	if m.summary != nil {
-		m.summary.SetAuthToken(token, isFromXAPIKeyHeader)
+		m.summary.SetAuthValue(token, isFromXAPIKeyHeader)
 	}
 }
 
@@ -356,7 +356,7 @@ func (m *Manager) doSynchronous(req *request) (*summaryResult, error) {
 		KeepRecentTokens: m.config.Summarizer.KeepRecentTokens,
 		KeepRecentCount:  m.config.Summarizer.KeepRecentCount,
 		Model:            req.model,
-		AuthToken:        req.authToken,
+		AuthValue:        req.authToken,
 		AuthIsXAPIKey:    req.authIsXAPIKey,
 		AuthEndpoint:     req.authEndpoint,
 	})

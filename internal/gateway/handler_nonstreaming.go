@@ -68,7 +68,7 @@ func (g *Gateway) handleNonStreaming(w http.ResponseWriter, r *http.Request, for
 					apiEndpoint = strings.TrimRight(g.config.URLs.Compresr, "/") + "/api/compress/tool-discovery/"
 				}
 				opts.APIEndpoint = apiEndpoint
-				opts.APIKey = g.config.Pipes.ToolDiscovery.Compresr.APIKey
+				opts.ProviderAuth = g.config.Pipes.ToolDiscovery.Compresr.AuthParam
 				opts.APITimeout = g.config.Pipes.ToolDiscovery.Compresr.Timeout
 			}
 

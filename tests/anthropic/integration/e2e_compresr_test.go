@@ -65,7 +65,7 @@ func e2eFullConfig() *config.Config {
 				EnableExpandContext:    true,
 				Compresr: config.CompresrConfig{
 					Endpoint: "/api/compress/tool-output/",
-					APIKey:   compresrKey,
+					AuthParam:   compresrKey,
 					Model:    "toc_latte_v1",
 					Timeout:  30 * time.Second,
 				},
@@ -80,7 +80,7 @@ func e2eFullConfig() *config.Config {
 				EnableSearchFallback: true,
 				Compresr: config.CompresrConfig{
 					Endpoint: "/api/compress/tool-discovery/",
-					APIKey:   compresrKey,
+					AuthParam:   compresrKey,
 					Model:    "tdc_coldbrew_v1",
 					Timeout:  30 * time.Second,
 				},
@@ -94,7 +94,7 @@ func e2eFullConfig() *config.Config {
 				Strategy: preemptive.StrategyCompresr,
 				Compresr: &preemptive.CompresrConfig{
 					Endpoint: "/api/compress/history/",
-					APIKey:   compresrKey,
+					AuthParam:   compresrKey,
 					Model:    "hcc_espresso_v1",
 					Timeout:  60 * time.Second,
 				},

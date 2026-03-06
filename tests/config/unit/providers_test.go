@@ -106,7 +106,7 @@ func TestProvidersConfig_Validate(t *testing.T) {
 			name: "valid provider",
 			cfg: config.ProvidersConfig{
 				"anthropic": {
-					APIKey: "sk-ant-xxx",
+					ProviderAuth: "sk-ant-xxx",
 					Model:  "claude-haiku-4-5",
 				},
 			},
@@ -116,7 +116,7 @@ func TestProvidersConfig_Validate(t *testing.T) {
 			name: "missing model",
 			cfg: config.ProvidersConfig{
 				"anthropic": {
-					APIKey: "sk-ant-xxx",
+					ProviderAuth: "sk-ant-xxx",
 				},
 			},
 			wantErr: true,
@@ -156,7 +156,7 @@ func TestConfig_ValidateUsedProviders(t *testing.T) {
 			},
 			Providers: config.ProvidersConfig{
 				"gemini": {
-					APIKey: "test-key",
+					ProviderAuth: "test-key",
 					Model:  "gemini-2.0-flash",
 				},
 			},
@@ -252,11 +252,11 @@ func TestConfig_ResolveProvider(t *testing.T) {
 	cfg := &config.Config{
 		Providers: config.ProvidersConfig{
 			"gemini": {
-				APIKey: "test-gemini-key",
+				ProviderAuth: "test-gemini-key",
 				Model:  "gemini-2.0-flash",
 			},
 			"anthropic": {
-				APIKey:   "test-anthropic-key",
+				ProviderAuth:   "test-anthropic-key",
 				Model:    "claude-haiku-4-5",
 				Endpoint: "https://custom-proxy.example.com/v1/messages",
 			},
@@ -274,8 +274,8 @@ func TestConfig_ResolveProvider(t *testing.T) {
 		if resolved.Model != "gemini-2.0-flash" {
 			t.Errorf("Model = %q, want %q", resolved.Model, "gemini-2.0-flash")
 		}
-		if resolved.APIKey != "test-gemini-key" {
-			t.Errorf("APIKey = %q, want %q", resolved.APIKey, "test-gemini-key")
+		if resolved.ProviderAuth != "test-gemini-key" {
+			t.Errorf("APIKey = %q, want %q", resolved.ProviderAuth, "test-gemini-key")
 		}
 		expectedEndpoint := "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.0-flash:generateContent"
 		if resolved.Endpoint != expectedEndpoint {

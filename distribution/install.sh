@@ -149,8 +149,6 @@ print_usage() {
     printf "\n"
     printf "     ${CYAN}context-gateway -l${NC}\n"
     printf "\n"
-    printf "  ${BOLD}Docs:${NC} ${CYAN}https://docs.compresr.ai${NC}\n"
-    printf "\n"
     printf "${GREEN}${BOLD}━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━${NC}\n"
 }
 

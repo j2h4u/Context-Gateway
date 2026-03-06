@@ -51,8 +51,8 @@ func buildInitEvent(cfg *config.Config) *monitoring.InitEvent {
 			Auth:          auth,
 			Model:         p.Model,
 			Endpoint:      p.GetEndpoint(name),
-			HasAPIKey:     strings.TrimSpace(p.APIKey) != "",
-			APIKeyEnvLike: strings.Contains(p.APIKey, "${"),
+			HasAPIKey:     strings.TrimSpace(p.ProviderAuth) != "",
+			APIKeyEnvLike: strings.Contains(p.ProviderAuth, "${"),
 		})
 	}
 

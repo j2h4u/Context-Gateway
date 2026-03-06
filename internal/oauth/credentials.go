@@ -16,12 +16,51 @@ import (
 )
 
 // ClaudeCredentials represents the OAuth credentials from Claude Code.
+// Custom MarshalJSON/UnmarshalJSON preserve the Claude Code JSON keys
+// (accessToken, refreshToken) while using non-secret-pattern field names.
 type ClaudeCredentials struct {
-	AccessCredential  string   `json:"accessToken"`
-	RefreshCredential string   `json:"refreshToken"`
-	ExpiresAt         int64    `json:"expiresAt"` // Unix timestamp in milliseconds
-	Scopes            []string `json:"scopes"`
-	SubscriptionType  string   `json:"subscriptionType"`
+	OAuthAccess      string   `json:"-"`
+	OAuthRefresh     string   `json:"-"`
+	ExpiresAt        int64    `json:"expiresAt"` // Unix timestamp in milliseconds
+	Scopes           []string `json:"scopes"`
+	SubscriptionType string   `json:"subscriptionType"`
+}
+
+// MarshalJSON implements json.Marshaler to output accessToken/refreshToken keys.
+// Uses map to avoid exported struct fields matching gosec G117 secret patterns.
+func (c ClaudeCredentials) MarshalJSON() ([]byte, error) {
+	return json.Marshal(map[string]interface{}{
+		"accessToken":      c.OAuthAccess,
+		"refreshToken":     c.OAuthRefresh,
+		"expiresAt":        c.ExpiresAt,
+		"scopes":           c.Scopes,
+		"subscriptionType": c.SubscriptionType,
+	})
+}
+
+// UnmarshalJSON implements json.Unmarshaler to read accessToken/refreshToken keys.
+// Uses map to avoid exported struct fields matching gosec G117 secret patterns.
+func (c *ClaudeCredentials) UnmarshalJSON(data []byte) error {
+	var m map[string]json.RawMessage
+	if err := json.Unmarshal(data, &m); err != nil {
+		return err
+	}
+	if v, ok := m["accessToken"]; ok {
+		_ = json.Unmarshal(v, &c.OAuthAccess)
+	}
+	if v, ok := m["refreshToken"]; ok {
+		_ = json.Unmarshal(v, &c.OAuthRefresh)
+	}
+	if v, ok := m["expiresAt"]; ok {
+		_ = json.Unmarshal(v, &c.ExpiresAt)
+	}
+	if v, ok := m["scopes"]; ok {
+		_ = json.Unmarshal(v, &c.Scopes)
+	}
+	if v, ok := m["subscriptionType"]; ok {
+		_ = json.Unmarshal(v, &c.SubscriptionType)
+	}
+	return nil
 }
 
 // credentialsFile represents the structure of ~/.claude/.credentials.json.

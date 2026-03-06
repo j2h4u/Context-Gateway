@@ -18,10 +18,10 @@ import (
 
 // ProviderConfig configures a single LLM provider.
 type ProviderConfig struct {
-	APIKey   string `yaml:"api_key"`            // API key (supports ${VAR} syntax)
-	Auth     string `yaml:"auth,omitempty"`     // Auth method: "api_key" (default), "oauth", or "bedrock" (SigV4)
-	Model    string `yaml:"model"`              // Model name (e.g., "claude-haiku-4-5", "gemini-2.0-flash")
-	Endpoint string `yaml:"endpoint,omitempty"` // Optional: override auto-resolved endpoint
+	ProviderAuth string `yaml:"api_key"`            // API key (supports ${VAR} syntax)
+	Auth         string `yaml:"auth,omitempty"`     // Auth method: "api_key" (default), "oauth", or "bedrock" (SigV4)
+	Model        string `yaml:"model"`              // Model name (e.g., "claude-haiku-4-5", "gemini-2.0-flash")
+	Endpoint     string `yaml:"endpoint,omitempty"` // Optional: override auto-resolved endpoint
 }
 
 // ProvidersConfig is a map of provider names to their configurations.
@@ -71,11 +71,11 @@ func (p ProvidersConfig) Validate() error {
 			return fmt.Errorf("provider %q: invalid auth %q (must be api_key, oauth, or bedrock)", name, cfg.Auth)
 		}
 		// When auth is explicitly set to oauth, api_key should be empty
-		if cfg.Auth == "oauth" && cfg.APIKey != "" {
+		if cfg.Auth == "oauth" && cfg.ProviderAuth != "" {
 			return fmt.Errorf("provider %q: auth=oauth but api_key is set (oauth uses captured Bearer tokens)", name)
 		}
 		// When auth is bedrock, api_key should be empty (uses AWS SigV4)
-		if cfg.Auth == "bedrock" && cfg.APIKey != "" {
+		if cfg.Auth == "bedrock" && cfg.ProviderAuth != "" {
 			return fmt.Errorf("provider %q: auth=bedrock but api_key is set (bedrock uses AWS SigV4)", name)
 		}
 	}
@@ -132,11 +132,11 @@ func (cfg *Config) ValidateUsedProviders() error {
 // ResolveProviderSettings returns the fully-resolved settings for a provider reference.
 // If providerName is empty, returns the legacy inline settings.
 type ResolvedProvider struct {
-	Provider string // Provider name (anthropic, gemini, openai)
-	Endpoint string
-	APIKey   string // Resolved credential field
-	Auth     string // Auth method: "api_key", "oauth", or "bedrock"
-	Model    string
+	Provider     string // Provider name (anthropic, gemini, openai)
+	Endpoint     string
+	ProviderAuth string // Resolved credential field
+	Auth         string // Auth method: "api_key", "oauth", or "bedrock"
+	Model        string
 }
 
 // ResolveProvider resolves a provider reference to its full settings.
@@ -158,11 +158,11 @@ func (cfg *Config) ResolveProvider(providerName string) (*ResolvedProvider, erro
 	}
 
 	return &ResolvedProvider{
-		Provider: providerName,
-		Endpoint: provider.GetEndpoint(providerName),
-		APIKey:   provider.APIKey,
-		Auth:     auth,
-		Model:    provider.Model,
+		Provider:     providerName,
+		Endpoint:     provider.GetEndpoint(providerName),
+		ProviderAuth: provider.ProviderAuth,
+		Auth:         auth,
+		Model:        provider.Model,
 	}, nil
 }
 
@@ -189,13 +189,13 @@ func (cfg *Config) ResolvePreemptiveProvider() PreemptiveConfig {
 	if resolved.Summarizer.Model == "" {
 		resolved.Summarizer.Model = provider.Model
 	}
-	if resolved.Summarizer.APISecret == "" {
-		resolved.Summarizer.APISecret = provider.APIKey
+	if resolved.Summarizer.ProviderKey == "" {
+		resolved.Summarizer.ProviderKey = provider.ProviderAuth
 		// Debug: log resolved API key length
-		if provider.APIKey != "" {
+		if provider.ProviderAuth != "" {
 			log.Debug().
 				Str("provider_name", resolved.Summarizer.Provider).
-				Int("provider_key_len", len(provider.APIKey)).
+				Int("provider_key_len", len(provider.ProviderAuth)).
 				Msg("Resolved API key from provider config")
 		} else {
 			log.Warn().

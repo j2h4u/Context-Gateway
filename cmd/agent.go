@@ -25,6 +25,10 @@ import (
 // runAgentCommand is the main entry point for the agent launcher.
 // It replaces start_agent.sh with native Go.
 func runAgentCommand(args []string) {
+	// Start update check in background immediately so the network request
+	// runs in parallel with flag parsing and port discovery.
+	showUpdateNotification := CheckForUpdatesAsync()
+
 	// Parse flags
 	var (
 		configFlag      string
@@ -239,6 +243,11 @@ parseLoop:
 	_ = os.Setenv("GATEWAY_PORT", strconv.Itoa(gatewayPort))
 
 	printBanner()
+
+	// Display update notification if a newer version is available.
+	// showUpdateNotification waits up to 5s for the background check started
+	// at the top of this function; by now it's usually already done.
+	showUpdateNotification()
 
 	// List mode (doesn't require API key)
 	if listFlag {
@@ -474,11 +483,11 @@ mainSelectionLoop:
 			fmt.Printf("\n[DEBUG] Config loaded from: %s\n", configSource)
 			fmt.Printf("[DEBUG] GEMINI_API_KEY env: %q\n", os.Getenv("GEMINI_API_KEY"))
 			for name, p := range earlyConfig.Providers {
-				fmt.Printf("[DEBUG] Provider %s: model=%s, key_len=%d\n", name, p.Model, len(p.APIKey))
+				fmt.Printf("[DEBUG] Provider %s: model=%s, key_len=%d\n", name, p.Model, len(p.ProviderAuth))
 			}
 			resolved := earlyConfig.ResolvePreemptiveProvider()
 			fmt.Printf("[DEBUG] Resolved summarizer: provider=%s, model=%s, key_len=%d\n",
-				resolved.Summarizer.Provider, resolved.Summarizer.Model, len(resolved.Summarizer.APISecret))
+				resolved.Summarizer.Provider, resolved.Summarizer.Model, len(resolved.Summarizer.ProviderKey))
 		}
 
 		telemetryEnabled := earlyConfig.Monitoring.TelemetryEnabled

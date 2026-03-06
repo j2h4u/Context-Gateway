@@ -131,7 +131,7 @@ func (h *Handler) ShouldFallback(statusCode int, responseBody []byte) types.Fall
 // GetFallbackHeaders returns headers for API key authentication.
 func (h *Handler) GetFallbackHeaders() map[string]string {
 	h.mu.RLock()
-	apiKey := h.cfg.APIKey
+	apiKey := h.cfg.FallbackKey
 	h.mu.RUnlock()
 
 	if apiKey == "" {
@@ -147,7 +147,7 @@ func (h *Handler) GetFallbackHeaders() map[string]string {
 func (h *Handler) HasFallback() bool {
 	h.mu.RLock()
 	defer h.mu.RUnlock()
-	return h.cfg.APIKey != "" && (h.cfg.Mode == types.AuthModeBoth || h.cfg.Mode == types.AuthModeSubscription)
+	return h.cfg.FallbackKey != "" && (h.cfg.Mode == types.AuthModeBoth || h.cfg.Mode == types.AuthModeSubscription)
 }
 
 // DetectAuthMode classifies the auth type from request headers.

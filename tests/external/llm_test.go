@@ -49,7 +49,7 @@ func TestDetectProvider(t *testing.T) {
 func TestCallLLM_Validation(t *testing.T) {
 	t.Run("missing_endpoint", func(t *testing.T) {
 		_, err := external.CallLLM(context.Background(), external.CallLLMParams{
-			APISecret: "key", Model: "model",
+			ProviderKey: "key", Model: "model",
 		})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "endpoint required")
@@ -65,7 +65,7 @@ func TestCallLLM_Validation(t *testing.T) {
 
 	t.Run("missing_model", func(t *testing.T) {
 		_, err := external.CallLLM(context.Background(), external.CallLLMParams{
-			Endpoint: "http://localhost", APISecret: "key",
+			Endpoint: "http://localhost", ProviderKey: "key",
 		})
 		require.Error(t, err)
 		assert.Contains(t, err.Error(), "model required")
@@ -106,7 +106,7 @@ func TestCallLLM_Anthropic(t *testing.T) {
 	result, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint:     server.URL,
 		Provider:     "anthropic",
-		APISecret:    "test-key",
+		ProviderKey:    "test-key",
 		Model:        "claude-haiku-4-5",
 		SystemPrompt: "compress this",
 		UserPrompt:   "content to compress",
@@ -146,7 +146,7 @@ func TestCallLLM_OpenAI(t *testing.T) {
 	result, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint:     server.URL,
 		Provider:     "openai",
-		APISecret:    "test-key",
+		ProviderKey:    "test-key",
 		Model:        "gpt-4o-mini",
 		SystemPrompt: "compress this",
 		UserPrompt:   "content to compress",
@@ -189,7 +189,7 @@ func TestCallLLM_Gemini(t *testing.T) {
 	result, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint:     server.URL,
 		Provider:     "gemini",
-		APISecret:    "test-key",
+		ProviderKey:    "test-key",
 		Model:        "gemini-2.0-flash",
 		SystemPrompt: "compress this",
 		UserPrompt:   "content to compress",
@@ -226,7 +226,7 @@ func TestCallLLM_ExplicitProvider(t *testing.T) {
 	result, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint:     server.URL + "/anthropic/v1",
 		Provider:     "openai",
-		APISecret:    "test-key",
+		ProviderKey:    "test-key",
 		Model:        "gpt-4o",
 		SystemPrompt: "test",
 		UserPrompt:   "test",
@@ -249,7 +249,7 @@ func TestCallLLM_HTTPError(t *testing.T) {
 
 	_, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint: server.URL, Provider: "openai",
-		APISecret: "key", Model: "m", MaxTokens: 100,
+		ProviderKey: "key", Model: "m", MaxTokens: 100,
 		SystemPrompt: "s", UserPrompt: "u",
 	})
 	require.Error(t, err)
@@ -267,7 +267,7 @@ func TestCallLLM_ErrorBodyTruncation(t *testing.T) {
 
 	_, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint: server.URL, Provider: "openai",
-		APISecret: "key", Model: "m", MaxTokens: 100,
+		ProviderKey: "key", Model: "m", MaxTokens: 100,
 		SystemPrompt: "s", UserPrompt: "u",
 	})
 	require.Error(t, err)
@@ -284,7 +284,7 @@ func TestCallLLM_InvalidJSON(t *testing.T) {
 
 	_, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint: server.URL, Provider: "anthropic",
-		APISecret: "key", Model: "m", MaxTokens: 100,
+		ProviderKey: "key", Model: "m", MaxTokens: 100,
 		SystemPrompt: "s", UserPrompt: "u",
 	})
 	require.Error(t, err)
@@ -300,7 +300,7 @@ func TestCallLLM_Timeout(t *testing.T) {
 
 	_, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint: server.URL, Provider: "openai",
-		APISecret: "key", Model: "m", MaxTokens: 100,
+		ProviderKey: "key", Model: "m", MaxTokens: 100,
 		SystemPrompt: "s", UserPrompt: "u",
 		Timeout: 100 * time.Millisecond,
 	})
@@ -314,7 +314,7 @@ func TestCallLLM_ContextCancellation(t *testing.T) {
 
 	_, err := external.CallLLM(ctx, external.CallLLMParams{
 		Endpoint: "http://localhost:99999", Provider: "openai",
-		APISecret: "key", Model: "m", MaxTokens: 100,
+		ProviderKey: "key", Model: "m", MaxTokens: 100,
 		SystemPrompt: "s", UserPrompt: "u",
 	})
 	require.Error(t, err)
@@ -345,7 +345,7 @@ func TestCallLLM_Concurrent(t *testing.T) {
 			defer wg.Done()
 			_, errors[idx] = external.CallLLM(context.Background(), external.CallLLMParams{
 				Endpoint: server.URL, Provider: "anthropic",
-				APISecret: "key", Model: "m", MaxTokens: 100,
+				ProviderKey: "key", Model: "m", MaxTokens: 100,
 				SystemPrompt: "s", UserPrompt: "u",
 			})
 		}(i)
@@ -364,7 +364,7 @@ func TestCallLLM_Concurrent(t *testing.T) {
 func TestCallLLM_DefaultTimeout(t *testing.T) {
 	// Verify that params with zero timeout get the default
 	params := external.CallLLMParams{
-		Endpoint: "http://localhost", APISecret: "key", Model: "m",
+		Endpoint: "http://localhost", ProviderKey: "key", Model: "m",
 	}
 	// We can't call validate() directly, but we can verify the constant
 	assert.Equal(t, 60*time.Second, external.DefaultTimeout)
@@ -443,7 +443,7 @@ func TestCallLLM_APIKey_Takes_Priority(t *testing.T) {
 	_, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint:     server.URL,
 		Provider:     "anthropic",
-		APISecret:    "my-api-key",
+		ProviderKey:    "my-api-key",
 		BearerAuth:   "my-bearer-token",
 		Model:        "model",
 		MaxTokens:    100,
@@ -500,7 +500,7 @@ func TestCallLLM_ExtraHeaders_Nil(t *testing.T) {
 	_, err := external.CallLLM(context.Background(), external.CallLLMParams{
 		Endpoint:     server.URL,
 		Provider:     "anthropic",
-		APISecret:    "key",
+		ProviderKey:    "key",
 		Model:        "model",
 		MaxTokens:    100,
 		SystemPrompt: "s",

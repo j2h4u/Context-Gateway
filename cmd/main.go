@@ -191,6 +191,11 @@ func runGatewayServer(args []string) {
 	// Create gateway
 	gw := gateway.New(cfg)
 
+	// Attach embedded React dashboard SPA
+	if dashFS, err := getDashboardFS(); err == nil {
+		gw.SetDashboardFS(dashFS)
+	}
+
 	// Display usage status bar (if API key is configured)
 	statusBar := displayGatewayStatus()
 	if statusBar != nil {

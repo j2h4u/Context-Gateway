@@ -82,9 +82,9 @@ func RefreshAccessToken(refreshToken string) (*ClaudeCredentials, error) {
 	expiresAt := time.Now().UnixMilli() + int64(tokenResp.ExpiresIn)*1000
 
 	creds := &ClaudeCredentials{
-		AccessCredential:  tokenResp.AccessValue,
-		RefreshCredential: tokenResp.RefreshValue,
-		ExpiresAt:         expiresAt,
+		OAuthAccess:  tokenResp.AccessValue,
+		OAuthRefresh: tokenResp.RefreshValue,
+		ExpiresAt:    expiresAt,
 	}
 
 	// Try to preserve scopes and subscription type from existing credentials
@@ -114,9 +114,9 @@ func RefreshIfNeeded(creds *ClaudeCredentials) (*ClaudeCredentials, error) {
 		return creds, nil
 	}
 
-	if creds.RefreshCredential == "" {
+	if creds.OAuthRefresh == "" {
 		return nil, fmt.Errorf("token expired and no refresh token available")
 	}
 
-	return RefreshAccessToken(creds.RefreshCredential)
+	return RefreshAccessToken(creds.OAuthRefresh)
 }

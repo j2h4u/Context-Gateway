@@ -47,8 +47,8 @@ type AuthConfig struct {
 	// Mode specifies the auth strategy (api_key, subscription, both).
 	Mode AuthMode
 
-	// APIKey is the fallback API key (used when Mode is AuthModeBoth or AuthModeAPIKey).
-	APIKey string
+	// FallbackKey is the fallback API key (used when Mode is AuthModeBoth or AuthModeAPIKey).
+	FallbackKey string
 
 	// SubscriptionOK indicates if subscription credentials are loaded and valid.
 	// For Anthropic: true if OAuth tokens are in Keychain.

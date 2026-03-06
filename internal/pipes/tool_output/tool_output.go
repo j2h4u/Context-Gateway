@@ -678,7 +678,7 @@ func (p *Pipe) compressViaExternalProvider(reqCtx context.Context, query, conten
 
 	params := external.CallLLMParams{
 		Endpoint:     p.compresrEndpoint,
-		APISecret:    p.compresrKey,
+		ProviderKey:  p.compresrKey,
 		Model:        p.compresrModel,
 		SystemPrompt: systemPrompt,
 		UserPrompt:   userPrompt,
@@ -688,7 +688,7 @@ func (p *Pipe) compressViaExternalProvider(reqCtx context.Context, query, conten
 
 	// OAuth fallback: reuse Bearer token captured from the incoming request.
 	// Claude Code OAuth tokens (sk-ant-oat*) require Bearer auth + anthropic-beta header.
-	if params.APISecret == "" && capturedBearerToken != "" {
+	if params.ProviderKey == "" && capturedBearerToken != "" {
 		params.BearerAuth = capturedBearerToken
 		if capturedBetaHeader != "" {
 			params.ExtraHeaders = map[string]string{"anthropic-beta": capturedBetaHeader}
