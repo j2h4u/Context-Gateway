@@ -504,7 +504,7 @@ func handleUsers(w http.ResponseWriter, r *http.Request) {
 
 		// Verify the request was sent with the content
 		assert.True(t, len(receivedBody) > 0)
-		assert.True(t, bytes.Contains(receivedBody, []byte("user service")))
+		assert.True(t, bytes.Contains(receivedBody, []byte("UserService")))
 	})
 }
 
